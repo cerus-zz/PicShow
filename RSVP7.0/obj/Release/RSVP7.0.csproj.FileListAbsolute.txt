@@ -1,0 +1,27 @@
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\bin\Release\RSVP7.0.exe
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\bin\Release\RSVP7.0.pdb
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\ResolveAssemblyReference.cache
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7._0.Config.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7._0.PicShow.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7._0.Properties.Resources.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7.0.csproj.GenerateResource.Cache
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7.0.exe
+C:\Documents and Settings\BCI\桌面\RSVP7.0\RSVP7.0\obj\Release\RSVP7.0.pdb
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7.0.exe
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7.0.pdb
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\bin\Release\RSVP7.0.exe
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\bin\Release\RSVP7.0.pdb
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\ResolveAssemblyReference.cache
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7._0.Config.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7._0.PicShow.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7._0.Properties.Resources.resources
+C:\Documents and Settings\BCI\桌面\RSVP7.0_auditoryonly\RSVP7.0\obj\Release\RSVP7.0.csproj.GenerateResource.Cache
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7.0.exe
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7.0.pdb
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\bin\Release\RSVP7.0.exe
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\bin\Release\RSVP7.0.pdb
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\ResolveAssemblyReference.cache
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7._0.Config.resources
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7._0.PicShow.resources
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7._0.Properties.Resources.resources
+E:\docu\BCI\系统界面程序\S_rsvp7.0\RSVP7.0_with_auditory\RSVP7.0\obj\Release\RSVP7.0.csproj.GenerateResource.Cache
