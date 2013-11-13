@@ -25,8 +25,18 @@ namespace RSVP7._0
         public static int m_audi_groups;   //单个语义的声音文件个数
                             
         public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
+        TcpSocket myServer = null;
         public static Image[] picMap = new Image[500];  //用于存储要显示的图片
         public static string[] Soundname = new string[500];    //取决于语义的种类
+        public struct Foo
+        {
+            
+            public int seq;     // 图像在图像数组Config.picMap中的位置
+            public double score;     // 图像获得的分值，可能是距离或者其他标准
+            //public void setSeq(int value) { seq = value; }
+            //public void setScore(double value) { score = value; } 
+        };
+        public static Foo[] feedback = new Foo[500];
 
         bool IschooseFolder = false;
         bool IschooseFolder_audio = false;
@@ -231,6 +241,22 @@ namespace RSVP7._0
 
                 IschooseFolder_audio = true;
             }    
+        }
+
+        private void Btn_startServer_Click(object sender, EventArgs e)
+        {
+            if (null == myServer)
+            {
+                myServer = new TcpSocket();
+                myServer.startHost();
+                Btn_startServer.Text = "Stop Server";
+            }
+            else
+            {
+                myServer.endHost();
+                myServer = null;
+                Btn_startServer.Text = "Start Server";
+            }
         }
     }
 }

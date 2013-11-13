@@ -13,7 +13,7 @@ using System.Runtime.InteropServices; //并口操作需要调用API函数
 namespace RSVP7._0
 {
     public partial class PicShow : Form
-    {
+    {        
         int[] RandNum = new int[200];        //大小要求取决于一组图片的张数或者同一语义图片重复的次数
         int[] Sequence = new int[500];       //存储同一语义重复显示的随机顺序
         int[] OrderforSem = new int[500];      //定义同一语义图片内部出现的随机顺序
@@ -338,7 +338,7 @@ namespace RSVP7._0
 
             // 发送标志255表示开始
             DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);             
+            Thread.Sleep(1);
             DlPortWritePortUshort(0x378, (ushort)(255));
             Thread.Sleep(20);
 
@@ -350,7 +350,8 @@ namespace RSVP7._0
                 //获取图片和声音播放的数组下标
                 if (Config.m_auditory <= 0)
                 {
-                    seq = OrderforSem[(Config.m_trialnum > Config.m_groups ? Config.m_trialnum : Config.m_groups) * coo + round];                   
+                    seq = OrderforSem[(Config.m_trialnum > Config.m_groups ? Config.m_trialnum : Config.m_groups) * coo + round];
+                    Config.feedback[round * Config.picNum + loop].seq = seq;
                 }
                 if (Config.m_auditory >= 0)
                 {
@@ -364,8 +365,8 @@ namespace RSVP7._0
                 //TODO: 发送并口消息   
                 if (Config.m_auditory <= 0)
                 {
-                    //label = (int)(seq / Config.m_groups) + 1;                     //
-                    label = seq + 1;
+                    label = (int)(seq / Config.m_groups) + 1;                     // 将图片位置下标转换为图片的目标标签号，从1开始
+                    //label = seq + 1;
                 }
                 else
                     label = (int)(seq_m / Config.m_audi_groups) + 1;
@@ -373,8 +374,8 @@ namespace RSVP7._0
                 DlPortWritePortUshort(0x378, (ushort)(0));
                 Thread.Sleep(1);                                  //该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
                 DlPortWritePortUshort(0x378, (ushort)(label));
-                //Thread.Sleep(10);
-                //DlPortWritePortUshort(0x378, (ushort)(0));
+                Thread.Sleep(10);
+                DlPortWritePortUshort(0x378, (ushort)(0));
 
                 if (loop != (Config.picNum - 1))
                     Thread.Sleep(Config.m_durationT-1);         //图片显示的时间，发送并口消息时已经睡了1ms,这里减去
