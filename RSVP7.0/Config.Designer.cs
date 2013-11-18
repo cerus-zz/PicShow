@@ -57,7 +57,7 @@
             // button2
             // 
             this.button2.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button2.Location = new System.Drawing.Point(569, 480);
+            this.button2.Location = new System.Drawing.Point(569, 484);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(137, 46);
             this.button2.TabIndex = 13;
@@ -273,7 +273,7 @@
             // Btn_startServer
             // 
             this.Btn_startServer.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Btn_startServer.Location = new System.Drawing.Point(569, 424);
+            this.Btn_startServer.Location = new System.Drawing.Point(569, 21);
             this.Btn_startServer.Name = "Btn_startServer";
             this.Btn_startServer.Size = new System.Drawing.Size(137, 46);
             this.Btn_startServer.TabIndex = 22;

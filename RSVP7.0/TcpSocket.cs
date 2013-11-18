@@ -55,7 +55,7 @@ namespace RSVP7._0
                 //    }
 
                 //}
-                localip = IPAddress.Parse("10.14.86.111");
+                localip = IPAddress.Parse("10.14.86.174");
                 IPEndPoint hostEP = new IPEndPoint(localip, portNum);
 
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -98,20 +98,23 @@ namespace RSVP7._0
                     //TODO: change control variables
                     if (receiveCount > 0)
                     {
+                       // MessageBox.Show("Yes, feedback!!!");
                         for (int i = 0; i < receiveCount; i+=8)
                         {
-                            result[i / 8] = System.BitConverter.ToDouble(buffer, i); 
+                            result[i / 8] = System.BitConverter.ToDouble(buffer, i);
+                            MessageBox.Show(result[i/8].ToString());
                         }
                         size = receiveCount / 8;
-                    }
-                    FileStream sFile = new FileStream("./result.txt", FileMode.Create | FileMode.Append| FileMode.Open);
-                    StreamWriter sw = new StreamWriter(sFile);
-                    sw.WriteLine("********************************************************\n");
-                    for (int i = 0; i < size; ++i)                  
-                        sw.Write(result[i].ToString() + " ");
 
-                    sw.WriteLine("********************************************************\n\n");
-                    sFile.Close();
+                        FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append | FileMode.Open);
+                        StreamWriter sw = new StreamWriter(sFile);
+                        sw.WriteLine("********************************************************\n");
+                        for (int i = 0; i < size; ++i)
+                            sw.Write(result[i].ToString() + " ");
+
+                        sw.WriteLine("********************************************************\n\n");
+                        sFile.Close();
+                    }                    
                     
                 }
             }
