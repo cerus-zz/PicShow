@@ -40,7 +40,7 @@ namespace RSVP7._0
         {
             try
             {
-                int portNum = 4100;
+                int portNum = 10086;
                 // get ip address automaticly
                 //IPHostEntry ipHost = Dns.GetHostEntry(Dns.GetHostName());
                 //IPAddress[] ipAddrlist = ipHost.AddressList;
@@ -55,7 +55,7 @@ namespace RSVP7._0
                 //    }
 
                 //}
-                localip = IPAddress.Parse("10.14.86.174");
+                localip = IPAddress.Parse("10.14.86.111");
                 IPEndPoint hostEP = new IPEndPoint(localip, portNum);
 
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -98,23 +98,61 @@ namespace RSVP7._0
                     //TODO: change control variables
                     if (receiveCount > 0)
                     {
-                       // MessageBox.Show("Yes, feedback!!!");
-                        for (int i = 0; i < receiveCount; i+=8)
+                        Char command = (Char)buffer[0];
+                        if ('F' == command)
                         {
-                            result[i / 8] = System.BitConverter.ToDouble(buffer, i);
-                            MessageBox.Show(result[i/8].ToString());
+                            int size = (receiveCount) / 8;
+                            double[] res = new double[size + 2];
+                            int c = 0;
+                            for (int i = 0; i < receiveCount; i += 8)
+                            {
+                                byte[] buf = new byte[8];
+                                for (int j = 0; j < 8; j++)
+                                {
+                                    buf[j] = buffer[1+ i + j];
+                                }
+                                buf = buf.Reverse().ToArray();
+                                res[c++] = System.BitConverter.ToDouble(buf, 0);
+                            }
+                            FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
+                            StreamWriter sw = new StreamWriter(sFile);
+
+                            for (int i = 0; i < size; ++i)
+                            {
+                                sw.Write(res[i]);
+                                sw.Write(" ");
+                            }
+                            sw.Write("\r\n");
+                            sw.Flush();
+                            sw.Close();
+                            sFile.Close();
                         }
-                        size = receiveCount / 8;
-
-                        FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append | FileMode.Open);
-                        StreamWriter sw = new StreamWriter(sFile);
-                        sw.WriteLine("********************************************************\n");
-                        for (int i = 0; i < size; ++i)
-                            sw.Write(result[i].ToString() + " ");
-
-                        sw.WriteLine("********************************************************\n\n");
-                        sFile.Close();
-                    }                    
+                        else if ('A' == command)
+                        {
+                            MessageBox.Show(command.ToString());
+                        }
+                        else if ('B' == command)
+                        {
+                            byte[] buf = new byte[4];
+                            for (int i = 0; i < 4; i++)
+                                buf[i] = buffer[1 + i];
+                            buf = buf.Reverse().ToArray();
+                            int round = System.BitConverter.ToInt32(buf, 0);
+                            MessageBox.Show(command.ToString() + " " + round.ToString());
+                        }
+                        else if ('C' == command)
+                        {
+                            MessageBox.Show(command.ToString());
+                        }
+                        else if ('S' == command)
+                        {
+                            MessageBox.Show(command.ToString());
+                        }
+                        else
+                        {
+                            MessageBox.Show("Unknown Command!");
+                        }
+                    }// end if (receiveCount > 0)               
                     
                 }
             }

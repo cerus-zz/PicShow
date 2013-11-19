@@ -13,7 +13,8 @@ using System.Runtime.InteropServices; //并口操作需要调用API函数
 namespace RSVP7._0
 {
     public partial class PicShow : Form
-    {        
+    {
+        # region Var Initialization
         int[] RandNum = new int[200];        //大小要求取决于一组图片的张数或者同一语义图片重复的次数
         int[] Sequence = new int[500];       //存储同一语义重复显示的随机顺序
         int[] OrderforSem = new int[500];      //定义同一语义图片内部出现的随机顺序
@@ -37,7 +38,10 @@ namespace RSVP7._0
         //并口操作
         [DllImport("DLPORTIO.dll", EntryPoint = "DlPortWritePortUshort", ExactSpelling = false, CharSet = CharSet.Unicode, SetLastError = true)]
         static extern void DlPortWritePortUshort(uint Port, ushort Value);
-        
+
+        # endregion Var Initialization
+
+        # region Generate random
         /*
          * 利用对随机数排序产生随机顺序
          */
@@ -112,6 +116,8 @@ namespace RSVP7._0
         }
         //---------------------------------------------------------------------------
 
+        # endregion Generate random
+
         public PicShow()
         {
             InitializeComponent();
@@ -147,6 +153,7 @@ namespace RSVP7._0
          
         }
 
+        # region  Control
         private void PicShow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
@@ -197,14 +204,20 @@ namespace RSVP7._0
                 }
                 pictureBox1.Image = null;
 
-                DlPortWritePortUshort(0x378, (ushort)(0));  //并口写0，防止重新开始时，上次的数据又被写入
+                //DlPortWritePortUshort(0x378, (ushort)(0));  //并口写0，防止重新开始时，上次的数据又被写入
             }
             else if (e.KeyCode == Keys.Q)
+            {
                 this.Close();
+                Config.Isonshow = false;
+            }
             else
                 MessageBox.Show("开始：Enter；重置：R；退出：Q");
-           
+
         }
+
+        # endregion Control
+
 
         private void cdTime(string num, Image bg_image, 
             Graphics my_graphics, Brush my_brush, Font my_font)
@@ -217,8 +230,23 @@ namespace RSVP7._0
         private void clnNum(Graphics my_graphics)
         {
             my_graphics.Clear(Color.Gray);
+        }        
+
+        private void showPicture(int seq)
+        {
+            if (Config.m_auditory <= 0)
+            {
+                if (seq != 0)                                  //传入参数时图片数组下标已经增1了，故代表图片标号从1开始
+                    pictureBox1.Image = Config.picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
+                else
+                    pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
+            }
+            if (Config.m_auditory >= 0)
+                musicplayer.Play();
+            //else pictureBox1.Image = null;
         }
 
+        # region CountDown & ImageShow
         private void countRun()
         {
             //初始化
@@ -240,32 +268,18 @@ namespace RSVP7._0
             for (int i = 5; i >= 1; i--)
             {
                 str = i.ToString();
-                this.Invoke(ct, new object[] { str,bg_image,my_graphics,my_brush,my_font });
+                this.Invoke(ct, new object[] { str, bg_image, my_graphics, my_brush, my_font });
                 Thread.Sleep(1000);
                 this.Invoke(cln, new object[] { my_graphics });
             }
 
             if (thr == null)
             {
-                if(Config.m_auditory!=0)
-                    this.Invoke(ct,new object[] {"+",bg_image,my_graphics,my_brush,my_font});
+                if (Config.m_auditory != 0)
+                    this.Invoke(ct, new object[] { "+", bg_image, my_graphics, my_brush, my_font });
                 thr = new Thread(new ThreadStart(thrRun));
                 thr.Start();
             }
-        }
-
-        private void showPicture(int seq)
-        {
-            if (Config.m_auditory <= 0)
-            {
-                if (seq != 0)                                  //传入参数时图片数组下标已经增1了，故代表图片标号从1开始
-                    pictureBox1.Image = Config.picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
-                else
-                    pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
-            }
-            if (Config.m_auditory >= 0)
-                musicplayer.Play();
-            //else pictureBox1.Image = null;
         }
 
         private void thrRun()
@@ -337,10 +351,10 @@ namespace RSVP7._0
             trialnum = Config.m_trialnum;
 
             // 发送标志255表示开始
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);
-            DlPortWritePortUshort(0x378, (ushort)(255));
-            Thread.Sleep(20);
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(1);
+            //DlPortWritePortUshort(0x378, (ushort)(255));
+            //Thread.Sleep(20);
 
             while (true)
             {
@@ -371,11 +385,11 @@ namespace RSVP7._0
                 else
                     label = (int)(seq_m / Config.m_audi_groups) + 1;
 
-                DlPortWritePortUshort(0x378, (ushort)(0));
-                Thread.Sleep(1);                                  //该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
-                DlPortWritePortUshort(0x378, (ushort)(label));
-                Thread.Sleep(10);
-                DlPortWritePortUshort(0x378, (ushort)(0));
+                //DlPortWritePortUshort(0x378, (ushort)(0));
+                //Thread.Sleep(1);                                  //该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
+                //DlPortWritePortUshort(0x378, (ushort)(label));
+                //Thread.Sleep(10);
+                //DlPortWritePortUshort(0x378, (ushort)(0));
 
                 if (loop != (Config.picNum - 1))
                     Thread.Sleep(Config.m_durationT-1);         //图片显示的时间，发送并口消息时已经睡了1ms,这里减去
@@ -411,17 +425,19 @@ namespace RSVP7._0
             }
 
             // 发送标志253表示结束
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(250);                
-            DlPortWritePortUshort(0x378, (ushort)(253));
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(250);                
+            //DlPortWritePortUshort(0x378, (ushort)(253));
         }
+        # endregion CountDown & ImageShow
 
+        # region Record click behavior
         private void PicShow_MouseClick(object sender, MouseEventArgs e)
         {
             //这个并口消息会不会干扰显示图像同时发的并口消息？           
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);                                   
-            DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(1);                                   
+            //DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
             //Thread.Sleep(10);
             //DlPortWritePortUshort(0x378, (ushort)(0));
             //MessageBox.Show("there is a object");
@@ -429,11 +445,11 @@ namespace RSVP7._0
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);
-            DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(1);
+            //DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
         }//end thrRun;
-
+        # endregion Record click behavior
 
     }
 }

@@ -25,7 +25,7 @@ namespace RSVP7._0
         public static int m_audi_groups;   //单个语义的声音文件个数
                             
         public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
-        TcpSocket myServer = null;
+        TcpSocket myServer = null;       
         public static Image[] picMap = new Image[500];  //用于存储要显示的图片
         public static string[] Soundname = new string[500];    //取决于语义的种类
         public struct Foo
@@ -38,6 +38,7 @@ namespace RSVP7._0
         };
         public static Foo[] feedback = new Foo[500];
 
+        public static bool Isonshow = false;       // 显示图片的界面是否存在，用于socket线程反应前作判断
         bool IschooseFolder = false;
         bool IschooseFolder_audio = false;
         int picAmount = 0;//图片总数
@@ -57,7 +58,7 @@ namespace RSVP7._0
             textBox1.Text = "500";
             textBox2.Text = "8";
             textBox3.Text = "500";
-            textBox4.Text = "13";
+            textBox4.Text = "15";
             textBox5.Text = "0";
             textBox7.Text = "-1";
             textBox8.Text = "20";
@@ -207,8 +208,8 @@ namespace RSVP7._0
                 }
 
                 PicShow frm = new PicShow();
-                frm.Show(); 
-            
+                frm.Show();
+                Isonshow = true;
             }
  
               
