@@ -12,6 +12,8 @@ using System.Runtime.InteropServices; //并口操作需要调用API函数
 
 namespace RSVP7._0
 {
+    public delegate void CloseEventHandler(Object sender, EventArgs e);
+
     public partial class PicShow : Form
     {
         # region Var Initialization
@@ -34,6 +36,9 @@ namespace RSVP7._0
         private delegate void count(string num, Image bg_image, 
             Graphics my_graphics, Brush my_brush, Font my_font); //用于显示倒计时的数字
         private delegate void clean(Graphics my_graphics);           //用于清空计数
+        // 该事件，是让关闭该界面窗口的操作推迟到主界面（config）中，
+        // 因为需要在主界面的实例中调用remove_Handler方法，避免事件残留！！！
+        public event CloseEventHandler CloseHandler;
 
         //并口操作
         [DllImport("DLPORTIO.dll", EntryPoint = "DlPortWritePortUshort", ExactSpelling = false, CharSet = CharSet.Unicode, SetLastError = true)]
@@ -138,21 +143,24 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            this.ClientSize = new Size(ws_width,ws_height); //不知道this.Size与此有什么区别
+            //this.ClientSize = new Size(ws_width,ws_height); //不知道this.Size与此有什么区别
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
             //pictureBox1
-            pictureBox1.Size = new Size(400,400);
-            pictureBox1.Location = new Point(ws_width/2-pictureBox1.Size.Width/2,ws_height/2-pictureBox1.Size.Height/2);            
-            pictureBox1.BackColor = System.Drawing.Color.Gray;
-            pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; //图片显示方式，伸缩适应
+            pictureBox1.Size = new Size(20, 20);
+            pictureBox1.Location = new Point(0, 0);
+            //pictureBox1.Size = new Size(400,400);
+            //pictureBox1.Location = new Point(ws_width/2-pictureBox1.Size.Width/2,ws_height/2-pictureBox1.Size.Height/2);            
+            //pictureBox1.BackColor = System.Drawing.Color.Gray;
+            //pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; //图片显示方式，伸缩适应
            // pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             //pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
            // pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来
          
         }
 
+        
         # region  Control
         private void PicShow_KeyDown(object sender, KeyEventArgs e)
         {
@@ -160,8 +168,8 @@ namespace RSVP7._0
             {
                 /*
                  * 开始倒数并显示图片
-                 */                
-                if(thr != null)
+                 */
+                if (thr != null)
                     MessageBox.Show("先按R终止之前的线程！");
                 else if (countDown == null)
                 {
@@ -208,8 +216,7 @@ namespace RSVP7._0
             }
             else if (e.KeyCode == Keys.Q)
             {
-                this.Close();
-                Config.Isonshow = false;
+                CloseHandler(this, new EventArgs());
             }
             else
                 MessageBox.Show("开始：Enter；重置：R；退出：Q");
@@ -219,7 +226,9 @@ namespace RSVP7._0
         # endregion Control
 
 
-        private void cdTime(string num, Image bg_image, 
+        #region delegation
+
+        private void drawNumber(string num, Image bg_image, 
             Graphics my_graphics, Brush my_brush, Font my_font)
         {
             //num = "+"; //如果要显示十字，就加这句好了
@@ -246,7 +255,10 @@ namespace RSVP7._0
             //else pictureBox1.Image = null;
         }
 
+        #endregion 
+
         # region CountDown & ImageShow
+        // run() for countdown
         private void countRun()
         {
             //初始化
@@ -261,7 +273,7 @@ namespace RSVP7._0
             my_brush = new SolidBrush(Color.Black);
             my_font = new Font("黑体", 150, FontStyle.Bold);
 
-            count ct = new count(cdTime);
+            count ct = new count(drawNumber);
             clean cln = new clean(clnNum);
             string str;
             //实验开始倒数
@@ -282,6 +294,7 @@ namespace RSVP7._0
             }
         }
 
+        // run() for showing our images
         private void thrRun()
         {
             try
@@ -429,7 +442,7 @@ namespace RSVP7._0
             //Thread.Sleep(250);                
             //DlPortWritePortUshort(0x378, (ushort)(253));
         }
-        # endregion CountDown & ImageShow
+        #endregion
 
         # region Record click behavior
         private void PicShow_MouseClick(object sender, MouseEventArgs e)
@@ -451,5 +464,73 @@ namespace RSVP7._0
         }//end thrRun;
         # endregion Record click behavior
 
+        #region TcpCommand Handler
+
+        // add command handler to a certian socket
+        public void add_Handler(TcpSocket socket)
+        {
+            if (null != socket)
+            {
+                socket.CommandHandler += Tcp_A_Handler;
+                socket.CommandHandler += Tcp_B_Handler;
+                socket.CommandHandler += Tcp_C_Handler;
+                socket.CommandHandler += Tcp_S_Handler;
+                socket.CommandHandler += Tcp_F_Handler;              
+            }
+        }
+
+        // 删除委托是必要的，因为，即便窗口关闭了，委托依然会响应事件！！！
+        public void remove_Handler(TcpSocket socket)
+        {
+            if (null != socket)
+            {
+                socket.CommandHandler -= Tcp_A_Handler;
+                socket.CommandHandler -= Tcp_B_Handler;
+                socket.CommandHandler -= Tcp_C_Handler;
+                socket.CommandHandler -= Tcp_S_Handler;
+                socket.CommandHandler -= Tcp_F_Handler;
+            }
+        }
+        // command handler functions
+        private void Tcp_A_Handler(Object sender, CommandEventArgs e)
+        {
+            if ('A' == e.command)
+            {
+                MessageBox.Show("A");
+            }
+        }
+
+        private void Tcp_B_Handler(Object sender, CommandEventArgs e)
+        {
+            if ('B' == e.command)
+            {
+                MessageBox.Show("B");
+            }
+        }
+
+        private void Tcp_C_Handler(Object sender, CommandEventArgs e)
+        {
+            if ('C' == e.command)
+            {
+                MessageBox.Show("C");
+            }
+        }
+
+        private void Tcp_S_Handler(Object sender, CommandEventArgs e)
+        {
+            if ('S' == e.command)
+            {
+                MessageBox.Show("S");
+            }
+        }
+
+        private void Tcp_F_Handler(Object sender, CommandEventArgs e)
+        {
+            if ('F' == e.command)
+            {
+                MessageBox.Show("F");
+            }
+        }       
+        #endregion
     }
 }

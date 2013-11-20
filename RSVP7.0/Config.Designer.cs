@@ -290,7 +290,7 @@
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.button2);
             this.Name = "Config";
-            this.Text = "Form1";
+            this.Text = "PreSentaTion";
             this.Load += new System.EventHandler(this.Config_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

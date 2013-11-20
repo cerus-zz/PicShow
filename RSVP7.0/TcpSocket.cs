@@ -12,11 +12,20 @@ using System.IO;
 
 namespace RSVP7._0
 {
-    class TcpSocket
+    public class CommandEventArgs : EventArgs
+    {
+        public char command { get; set; }
+        public int round { get; set; }
+    }
+
+    public delegate void TcpEventHandler(Object sender, CommandEventArgs e);
+
+    public class TcpSocket
     {        
         #region Socket
         public void hostAcceptMethod()
         {
+
             while (true)
             {
                 try
@@ -101,6 +110,7 @@ namespace RSVP7._0
                         Char command = (Char)buffer[0];
                         if ('F' == command)
                         {
+                            // 返回了feedback结果，告诉PicShow显示结果
                             int size = (receiveCount) / 8;
                             double[] res = new double[size + 2];
                             int c = 0;
@@ -126,27 +136,45 @@ namespace RSVP7._0
                             sw.Flush();
                             sw.Close();
                             sFile.Close();
+
+                            CommandEventArgs e = new CommandEventArgs();
+                            e.command = 'F';
+                            CommandHandler(this, e);
                         }
                         else if ('A' == command)
                         {
-                            MessageBox.Show(command.ToString());
+                            // 告诉被试休息
+                            CommandEventArgs e = new CommandEventArgs();
+                            e.command = 'A';
+                            CommandHandler(this, e);
                         }
                         else if ('B' == command)
                         {
+                            // 训练中的休息，要显示剩下的训练轮数
                             byte[] buf = new byte[4];
                             for (int i = 0; i < 4; i++)
                                 buf[i] = buffer[1 + i];
                             buf = buf.Reverse().ToArray();
                             int round = System.BitConverter.ToInt32(buf, 0);
-                            MessageBox.Show(command.ToString() + " " + round.ToString());
+
+                            CommandEventArgs e = new CommandEventArgs();
+                            e.command = 'B';
+                            e.round = round;
+                            CommandHandler(this, e);
                         }
                         else if ('C' == command)
                         {
-                            MessageBox.Show(command.ToString());
+                            // 告诉被试这是一轮测试，等待测试结果
+                            CommandEventArgs e = new CommandEventArgs();
+                            e.command = 'C';
+                            CommandHandler(this, e);
                         }
                         else if ('S' == command)
                         {
-                            MessageBox.Show(command.ToString());
+                            // 告诉被试，可以随时开始一轮实验
+                            CommandEventArgs e = new CommandEventArgs();
+                            e.command = 'S';
+                            CommandHandler(this, e);
                         }
                         else
                         {
@@ -165,6 +193,8 @@ namespace RSVP7._0
 
         #endregion 
 
+        #region VarDef & Otherfunc
+
         public void Getresult(Config.Foo[] map)
         {
             for (int i=0; i < size; ++i)
@@ -172,11 +202,22 @@ namespace RSVP7._0
                 map[i].score = result[i];
             }
         }
+
+        public void get_Handler(PicShow psw)
+        {
+            if (null != psw)
+            {
+                psw.add_Handler(this);
+            }
+        }
+
+        public event TcpEventHandler CommandHandler; 
         Socket socket = null;
         Socket destSocket = null;
         Thread trServerAccept = null;
         Thread trReceive = null;
         int size = 0;
         double[] result = new double[400];          // 用于接收结果的数组，已知结果会是double类型的数值
+        #endregion VarDef & Otherfunc
     }
 }

@@ -25,7 +25,8 @@ namespace RSVP7._0
         public static int m_audi_groups;   //单个语义的声音文件个数
                             
         public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
-        TcpSocket myServer = null;       
+        TcpSocket myServer = null;
+        PicShow psw = null;
         public static Image[] picMap = new Image[500];  //用于存储要显示的图片
         public static string[] Soundname = new string[500];    //取决于语义的种类
         public struct Foo
@@ -38,7 +39,7 @@ namespace RSVP7._0
         };
         public static Foo[] feedback = new Foo[500];
 
-        public static bool Isonshow = false;       // 显示图片的界面是否存在，用于socket线程反应前作判断
+       // public static bool Isonshow = false;       // 显示图片的界面是否存在，用于socket线程反应前作判断
         bool IschooseFolder = false;
         bool IschooseFolder_audio = false;
         int picAmount = 0;//图片总数
@@ -65,6 +66,7 @@ namespace RSVP7._0
             this.Text = "Display";     //窗体的Title
         }
 
+        #region Get Parameters
         private bool GetParam()
         {
             try
@@ -160,6 +162,10 @@ namespace RSVP7._0
             return true;
         }
 
+        #endregion
+
+        #region Action on Click
+
         private void button1_Click(object sender, EventArgs e)
         {
             /*
@@ -193,8 +199,8 @@ namespace RSVP7._0
         }
 
         private void button2_Click(object sender, EventArgs e)
-        {           
-            if(GetParam())
+        {
+            if (GetParam())
             {
                 if (m_auditory <= 0 && !IschooseFolder)      //picshow only or show with audio
                 {
@@ -207,12 +213,11 @@ namespace RSVP7._0
                     return;
                 }
 
-                PicShow frm = new PicShow();
-                frm.Show();
-                Isonshow = true;
-            }
- 
-              
+                psw = new PicShow();
+                psw.Show();
+                psw.CloseHandler += CloseWinform;
+                psw.add_Handler(myServer);
+            }                        
         }
 
         private void Duration(object sender, EventArgs e)
@@ -251,12 +256,26 @@ namespace RSVP7._0
                 myServer = new TcpSocket();
                 myServer.startHost();
                 Btn_startServer.Text = "Stop Server";
+                myServer.get_Handler(psw);
             }
             else
             {
                 myServer.endHost();
                 myServer = null;
                 Btn_startServer.Text = "Start Server";
+            }
+        }
+        #endregion 
+
+        // 关闭PicShow委托
+        // 需要删除PicShow实例中加到TcpSocket事件中的委托
+        private void CloseWinform(Object sender, EventArgs e)
+        {
+            if (null != psw)
+            {
+                psw.CloseHandler -= CloseWinform;
+                psw.remove_Handler(myServer);
+                psw.Close();
             }
         }
     }
