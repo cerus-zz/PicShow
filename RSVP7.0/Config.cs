@@ -16,26 +16,28 @@ namespace RSVP7._0
         /*
          * 声明参数变量
          */
-        public static int m_durationT;     //每幅图片持续的时间
-        public static int m_trialnum;      //循环的轮数
-        public static int m_interval;      //每组图片显示之间的时间间隔
-        public static int m_groups;        //语义组数,其实就是单个语义的图片个数
-        public static int m_evtlabel;      //目标语义特定图片的标签，用于对比实验，"0"表示不使用
-        public static int m_auditory;      //是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
-        public static int m_audi_groups;   //单个语义的声音文件个数
+        public static int m_durationT;     // 每幅图片持续的时间
+        public static int m_trialnum;      // 每次run的图像数
+        public static int m_tmbreak;      // 每组图片显示之间的时间间隔
+        public static int m_groups;        // 语义组数,其实就是单个语义的图片个数
+        public static String m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
+        public static int m_auditory;      // 是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
+        public static int m_audi_groups;   // 单个语义的声音文件个数
                             
         public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
         TcpSocket myServer = null;
+        TcpClient myClient = null;
+        public static string ip;
+        public static int port;
         PicShow psw = null;
         public static Image[] picMap = new Image[500];  //用于存储要显示的图片
         public static string[] Soundname = new string[500];    //取决于语义的种类
         public struct Foo
         {
-            
-            public int seq;     // 图像在图像数组Config.picMap中的位置
-            public double score;     // 图像获得的分值，可能是距离或者其他标准
-            //public void setSeq(int value) { seq = value; }
-            //public void setScore(double value) { score = value; } 
+
+            public String imagepath { get; set; }             // 图像路径
+            public double score { get; set; }                // 图像获得的分值，可能是距离或者其他标准
+            public int label { get; set; }
         };
         public static Foo[] feedback = new Foo[500];
 
@@ -57,13 +59,17 @@ namespace RSVP7._0
              */
 
             textBox1.Text = "500";
-            textBox2.Text = "8";
+            textBox2.Text = "200";
             textBox3.Text = "500";
             textBox4.Text = "15";
             textBox5.Text = "0";
             textBox7.Text = "-1";
             textBox8.Text = "20";
             this.Text = "Display";     //窗体的Title
+            Tbox_ip.Text  = "10.14.86.174";
+            Tbox_port.Text= "10086";
+            Tbox_ip_client.Text = "10.14.86.174";
+            Tbox_port_client.Text = "1050";
         }
 
         #region Get Parameters
@@ -92,8 +98,8 @@ namespace RSVP7._0
             }
             try
             {
-                //获取每组图片循环之间的时间间隔
-                m_interval = int.Parse(textBox3.Text.ToString());                  
+                //获取每张图片显示后的间歇时间
+                m_tmbreak = int.Parse(textBox3.Text.ToString());                  
             }
             catch
             {
@@ -123,7 +129,7 @@ namespace RSVP7._0
             }
             try
             {
-                m_evtlabel = int.Parse(textBox5.Text.ToString());
+                m_evtlabel = textBox5.Text.ToString();
             }
             catch
             {
@@ -216,7 +222,7 @@ namespace RSVP7._0
                 psw = new PicShow();
                 psw.Show();
                 psw.CloseHandler += CloseWinform;
-                psw.add_Handler(myServer);
+                psw.add_Handler(myServer, myClient);
             }                        
         }
 
@@ -249,11 +255,14 @@ namespace RSVP7._0
             }    
         }
 
+        // 打开服务器监听
         private void Btn_startServer_Click(object sender, EventArgs e)
         {
             if (null == myServer)
             {
-                myServer = new TcpSocket();
+                ip = Tbox_ip.Text;
+                port = System.Int32.Parse(Tbox_port.Text);
+                myServer = new TcpSocket(ip, port);
                 myServer.startHost();
                 Btn_startServer.Text = "Stop Server";
                 myServer.get_Handler(psw);
@@ -265,6 +274,28 @@ namespace RSVP7._0
                 Btn_startServer.Text = "Start Server";
             }
         }
+
+
+        // 客户端连接到服务器，用于机器从大图库中搜取目标
+        private void Btn_cntToclient_Click(object sender, EventArgs e)
+        {
+            if (null == myClient)
+            {
+                ip = Tbox_ip_client.Text;
+                port = Int32.Parse(Tbox_port_client.Text);
+                myClient = new TcpClient(ip, port);
+                myClient.connectTohost();
+                myClient.get_Handler(psw);
+                Btn_cntToclient.Text = "DisConnect";
+            }
+            else
+            {
+                if (psw != null) psw.remove_Handler(null, myClient);
+                myClient.disconnect();               
+                myClient = null;
+                Btn_cntToclient.Text = "Connect";
+            }
+        }
         #endregion 
 
         // 关闭PicShow委托
@@ -274,9 +305,10 @@ namespace RSVP7._0
             if (null != psw)
             {
                 psw.CloseHandler -= CloseWinform;
-                psw.remove_Handler(myServer);
+                psw.remove_Handler(myServer, myClient);
                 psw.Close();
             }
         }
+
     }
 }

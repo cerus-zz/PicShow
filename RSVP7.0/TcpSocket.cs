@@ -15,7 +15,7 @@ namespace RSVP7._0
     public class CommandEventArgs : EventArgs
     {
         public char command { get; set; }
-        public int round { get; set; }
+        public int number { get; set; }
     }
 
     public delegate void TcpEventHandler(Object sender, CommandEventArgs e);
@@ -23,6 +23,12 @@ namespace RSVP7._0
     public class TcpSocket
     {        
         #region Socket
+
+        public TcpSocket(String ip, int portnum)
+        {
+            localip = IPAddress.Parse(ip);
+            hostEP = new IPEndPoint(localip, portnum);
+        }
         public void hostAcceptMethod()
         {
 
@@ -48,25 +54,7 @@ namespace RSVP7._0
         public void startHost()
         {
             try
-            {
-                int portNum = 10086;
-                // get ip address automaticly
-                //IPHostEntry ipHost = Dns.GetHostEntry(Dns.GetHostName());
-                //IPAddress[] ipAddrlist = ipHost.AddressList;
-                IPAddress localip = null;
-                //foreach (IPAddress Ip in ipAddrlist)
-                //{
-                //    string tp = Ip.ToString();
-                //    if (tp[0] != ':')
-                //    {
-                //        localip = Ip;
-                //        break;
-                //    }
-
-                //}
-                localip = IPAddress.Parse("10.14.86.111");
-                IPEndPoint hostEP = new IPEndPoint(localip, portNum);
-
+            {                                       
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 socket.Bind(hostEP);
                 socket.Listen(100);
@@ -89,8 +77,8 @@ namespace RSVP7._0
         {
             if (socket != null) socket.Close();
             if (destSocket != null) destSocket.Close();
-            if (trServerAccept != null) trServerAccept.Abort();
-            if (trReceive != null) trReceive.Abort();
+            if (trServerAccept != null) { trServerAccept.Abort(); trServerAccept.Join(); }
+            if (trReceive != null) { trReceive.Abort(); trReceive.Join(); }
         }
 
         private void receiveMethod(object obj)
@@ -111,9 +99,8 @@ namespace RSVP7._0
                         if ('F' == command)
                         {
                             // 返回了feedback结果，告诉PicShow显示结果
-                            int size = (receiveCount) / 8;
-                            double[] res = new double[size + 2];
-                            int c = 0;
+                            int size = (receiveCount) / 8;              
+                            int count = 0;
                             for (int i = 0; i < receiveCount; i += 8)
                             {
                                 byte[] buf = new byte[8];
@@ -122,14 +109,17 @@ namespace RSVP7._0
                                     buf[j] = buffer[1+ i + j];
                                 }
                                 buf = buf.Reverse().ToArray();
-                                res[c++] = System.BitConverter.ToDouble(buf, 0);
+                                Config.feedback[count++].score = System.BitConverter.ToDouble(buf, 0);
                             }
+                            quick_sort(Config.feedback, 0, size-1);
                             FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
                             StreamWriter sw = new StreamWriter(sFile);
 
                             for (int i = 0; i < size; ++i)
                             {
-                                sw.Write(res[i]);
+                                sw.Write(Config.feedback[i].imagepath);
+                                sw.Write("-");
+                                sw.Write(Config.feedback[i].score);
                                 sw.Write(" ");
                             }
                             sw.Write("\r\n");
@@ -159,7 +149,7 @@ namespace RSVP7._0
 
                             CommandEventArgs e = new CommandEventArgs();
                             e.command = 'B';
-                            e.round = round;
+                            e.number = round;
                             CommandHandler(this, e);
                         }
                         else if ('C' == command)
@@ -195,19 +185,36 @@ namespace RSVP7._0
 
         #region VarDef & Otherfunc
 
-        public void Getresult(Config.Foo[] map)
+        // quicksort
+        private void quick_sort(Config.Foo[] res, int low, int high)
         {
-            for (int i=0; i < size; ++i)
+            int l = low, h = high;
+            Config.Foo tmp = new Config.Foo();
+            while (l < h)
             {
-                map[i].score = result[i];
+                while (l <= high && res[l].score <= res[low].score) ++l;
+                while (res[h].score > res[low].score) --h;
+                if (l < h)
+                {
+                    tmp = res[h];
+                    res[h] = res[l];
+                    res[l] = tmp;
+                }
             }
+
+            tmp = res[low];
+            res[low] = res[h];
+            res[h] = tmp;
+
+            if (low < h) quick_sort(res, low, h - 1);
+            if (h < high) quick_sort(res, h + 1, high);
         }
 
         public void get_Handler(PicShow psw)
         {
             if (null != psw)
             {
-                psw.add_Handler(this);
+                psw.add_Handler(this, null);
             }
         }
 
@@ -216,8 +223,9 @@ namespace RSVP7._0
         Socket destSocket = null;
         Thread trServerAccept = null;
         Thread trReceive = null;
-        int size = 0;
-        double[] result = new double[400];          // 用于接收结果的数组，已知结果会是double类型的数值
+        IPAddress localip;
+        IPEndPoint hostEP;
+
         #endregion VarDef & Otherfunc
     }
 }
