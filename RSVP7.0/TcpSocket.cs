@@ -186,10 +186,10 @@ namespace RSVP7._0
         #region VarDef & Otherfunc
 
         // quicksort
-        private void quick_sort(Config.Foo[] res, int low, int high)
+        private void quick_sort(Foo[] res, int low, int high)
         {
             int l = low, h = high;
-            Config.Foo tmp = new Config.Foo();
+            Foo tmp = new Foo();
             while (l < h)
             {
                 while (l <= high && res[l].score <= res[low].score) ++l;

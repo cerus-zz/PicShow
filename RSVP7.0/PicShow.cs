@@ -16,15 +16,12 @@ namespace RSVP7._0
 
     public partial class PicShow : Form
     {
-        # region Var Initialization
-        int[] RandNum = new int[200];                         // 大小要求取决于一组图片的张数或者同一语义图片重复的次数
-        int[] Sequence = new int[500];                        // 存储同一语义重复显示的随机顺序
-        int[] OrderforSem = new int[500];                     // 定义同一语义图片内部出现的随机顺序
-        int[] OrderforMusic = new int[500];                   // 定义同一语义声音内部出现的随机顺序       
-        //PictureBox[] showpictures = new PictureBox[20];       // 最后显示的结果图片
+        # region Var Initialization      
 
         //全局变量声明或初始化
+        Image[] picMap = new Image[300];  //用于存储要显示的图片
         int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
+        static int run = 0;
         System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
 
         Thread countDown;                 // 倒计时线程
@@ -46,85 +43,93 @@ namespace RSVP7._0
 
         # region Generate random sequnce for display
 
-        private void Loadimages()
+        private void Loadimages(int runnum)
         {
+            MessageBox.Show(Config.m_evtlabel[runnum]);
+            GetImage(Convert.ToInt32(Config.m_evtlabel[runnum]));
+            
+            // 利用对随机数排序乱序播放次序
+            disorder(Config.feedback, Config.m_trialnum);
+
             for (int i = 0; i < Config.m_trialnum; ++i)
             {
-                Config.picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
+                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
             }
         }
-        /*
-         * 利用对随机数排序产生随机顺序
-         */
-        //private void QuickSort(int[] Order, int bar, int inlen, int low, int high)
-        //{
-        //    int t_low = low;
-        //    int t_high = high;
-        //    int piovtkey = RandNum[low];
-        //    int imit = Order[bar * inlen + low];
 
-        //    while (low < high)
-        //    {
-        //        while (low < high && piovtkey <= RandNum[high])
-        //            high--;
-        //        if (low < high)
-        //        {
-        //            RandNum[low] = RandNum[high];
-        //            Order[bar * inlen + low] = Order[bar * inlen + high];
-        //            low++;
-        //        }
-        //        while (low < high && piovtkey > RandNum[low])
-        //            low++;
-        //        if (low < high)
-        //        {
-        //            RandNum[high] = RandNum[low];
-        //            Order[bar * inlen + high] = Order[bar * inlen + low];
-        //            high--;
-        //        }
-        //    }
-        //    RandNum[low] = piovtkey;
-        //    Order[bar * inlen + low] = imit;
-        //    piovtkey = low;
+        // 获取给定目标的播放图像子集
+        private void GetImage(int targetLabel)
+        {
+            
+            List<Foo> tmpTarPic = new List<Foo>();//存放目标图片信息
+            List<Foo> tmpnTarPic = new List<Foo>();//存放非目标图片信息
+            int index = 0;
+            //遍历每一张图片，将图片分为目标图片和非目标图片，分别存在tmpTarPic和tmpnTarPic
+            foreach (Foo theFoo in Config.allPic)
+            {
+                if (theFoo.label == targetLabel)
+                    tmpTarPic.Add(theFoo);
+                else
+                    tmpnTarPic.Add(theFoo);
+            }
 
-        //    if (t_low < piovtkey) QuickSort(Order, bar, inlen, t_low, piovtkey - 1);
-        //    if (t_high > piovtkey) QuickSort(Order, bar, inlen, piovtkey + 1, t_high);
-        //}
+            //罗列出目标图片
+            int[] tmpTarLabel = new int[Config.m_targetnum];
+            tmpTarLabel = myRan(tmpTarPic.Count, tmpTarPic.Count - 1, 0, Config.m_targetnum);
+            foreach (int eTarLabel in tmpTarLabel)
+            {
+                Config.feedback[index++] = tmpTarPic[eTarLabel];
+            }
+            
+            //罗列出非目标图片，放入nTargetPic
+            int[] tmpnTarLabel = new int[Config.m_trialnum - Config.m_targetnum];
+            tmpnTarLabel = myRan(tmpnTarPic.Count, tmpnTarPic.Count - 1, 0, Config.m_trialnum - Config.m_targetnum);
+            foreach (int enTarLabel in tmpnTarLabel)
+            {
+                Config.feedback[index++] = tmpnTarPic[enTarLabel];
+            }
+             
+        }
 
-        //private void RanSeq(int bar, int inlen, int[] Order)  //对不同组的顺序数实现随机化，因此bar为每组界限，inlen指每组长度
-        //{
-        //    Random seed = new Random(System.Guid.NewGuid().GetHashCode() + sead * 3456575);
-        //    for (int i = 0; i < inlen; i++)
-        //    {
-        //        RandNum[i] = seed.Next(1, 100000);
-        //        Order[bar * inlen + i] = i;     //顺序数
-        //    }
+        //产生随机数
+        private int[] myRan(int inNum, int upLimit, int lowLimit, int outNum)
+        {
+            int[] index = new int[inNum];
+            int[] result = new int[outNum];
 
-        //    QuickSort(Order, bar, inlen, 0, inlen - 1);  //通过记录一组随机数的排序来打乱顺序数
-        //}
-        //private void RanSeq_group(int bar, int inlen, int trialnum, int[] Order)  //由于每个语义的每个图片都可能重复不止一次，trialnum为总共一个语义重复的次数
-        //{     
-        //    if ((Config.m_evtlabel != 0) && (bar == (Config.m_evtlabel - 1) / Config.m_groups))
-        //    {
-        //        for (int i = 0; i < trialnum; ++i)
-        //            Order[bar * trialnum + i] = Config.m_evtlabel - 1;
-        //    }
-        //    else
-        //    {
-        //        if (trialnum < inlen)
-        //            trialnum = inlen;  //inlen指总共可循环的图片数，trialnum指实际需要循环次数，所以如果trialnum更小，则图片数是够的，没必要更少
+            for (int i = 0; i < inNum; i++)
+                index[i] = i;
 
-        //        Random seed = new Random(System.Guid.NewGuid().GetHashCode() + sead * 3464575);
-        //        int j;
-        //        for (int i = 0; i < trialnum; ++i)
-        //        {
-        //            j = i % inlen;
-        //            RandNum[i] = seed.Next(1, 100000);
-        //            Order[bar * trialnum + i] = bar * inlen + j;
-        //        }
+            Random ran = new Random();
 
-        //        QuickSort(Order, bar, trialnum, 0, trialnum - 1);
-        //    }
-        //}
+            int site = inNum;
+            int id;
+
+            for (int j = 0; j < outNum; j++)
+            {
+                id = ran.Next(0, site - 1);                
+                result[j] = index[id];
+                index[id] = index[site - 1];
+                site--;
+            }
+
+            return result;
+        }
+
+        // 乱序
+        private void disorder(Foo[] arr, int size)
+        {
+            Random seed = new Random(System.Guid.NewGuid().GetHashCode() + 1 * 3456575);
+            Foo tmp = new Foo();
+            int rand = 0;
+            for (int i = 0; i < size; ++i)
+            {
+                rand = seed.Next(i, size-1);
+                tmp = arr[i];
+                arr[i] = arr[rand];
+                arr[rand] = tmp;
+            }
+        }
         //---------------------------------------------------------------------------
 
         # endregion
@@ -149,17 +154,15 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            this.ClientSize = new Size(800, 800); //不知道this.Size与此有什么区别
+            this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
             //pictureBox1
-            pictureBox1.Size = new Size(20, 20);
-            pictureBox1.Location = new Point(0, 0);
-            pictureBox1.Size = new Size(400, 400);
+            pictureBox1.Size = new Size(200, 200);
             pictureBox1.Location = new Point(ws_width / 2 - pictureBox1.Size.Width / 2, ws_height / 2 - pictureBox1.Size.Height / 2);
             pictureBox1.BackColor = System.Drawing.Color.Gray;
-            pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; //图片显示方式，伸缩适应        
+            pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom; //图片显示方式，伸缩适应        
            //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来         
          
         }
@@ -200,11 +203,11 @@ namespace RSVP7._0
         private void PicShow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
-            {
+            {               
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
                 ghs.Dispose();
-                pictureBox1.Visible = true;
+                pictureBox1.Visible = false;
                 /*
                  * 开启新线程前，关闭旧线程
                  */
@@ -252,8 +255,12 @@ namespace RSVP7._0
             Graphics my_graphics, Brush my_brush, Font my_font)
         {
             //num = "+"; //如果要显示十字，就加这句好了
-            pictureBox1.Image = bg_image;
-            my_graphics.DrawString(num, my_font, my_brush, (pictureBox1.Size.Width / 2), (pictureBox1.Size.Height / 2 - my_font.Height/3));
+            //pictureBox1.Image = bg_image;
+            my_graphics.DrawString(num, my_font, my_brush, this.Size.Width/2 - my_font.Height/3, this.Size.Height/2 - my_font.Height/2);
+            if ("+" == num)
+            {
+                pictureBox1.Visible = true;
+            }
         }
 
         private void clnNum(Graphics my_graphics)
@@ -266,7 +273,7 @@ namespace RSVP7._0
             if (Config.m_auditory <= 0)
             {
                 if (seq != 0)                                  //传入参数时图片数组下标已经增1了，故代表图片标号从1开始
-                    pictureBox1.Image = Config.picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
+                    pictureBox1.Image = picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
                 else
                     pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
             }
@@ -288,7 +295,7 @@ namespace RSVP7._0
             Font my_font;
 
             bg_image = RSVP7._0.Properties.Resources.bg_gray;
-            my_graphics = Graphics.FromImage(bg_image);
+            my_graphics = this.CreateGraphics();
             my_brush = new SolidBrush(Color.Black);
             my_font = new Font("黑体", 150, FontStyle.Bold);
 
@@ -316,6 +323,11 @@ namespace RSVP7._0
         // run() for showing our images
         private void thrRun()
         {
+            if (run >= Config.m_evtlabel.Length)
+            {
+                MessageBox.Show("no more RUN, Objects should be UPdated!");
+                return;
+            }
             try
             {
                 // 终止旧倒计时线程，开启新线程
@@ -330,60 +342,21 @@ namespace RSVP7._0
 
             showPic sp = new showPic(showPicture);           
     
-            //while ((trialnum--) != 0)           // 提前生成好图像顺序并加载图像
-            //{
-            //    while (true)
-            //    {
-            //        RanSeq(bar, Config.picNum, Sequence);
-            //        sead++;
-            //        if (Sequence[bar * Config.picNum] != sentinel)   // 防止语义相同的图片连续显示
-            //            break;
-            //    }
-            //    sentinel = Sequence[bar * Config.picNum + Config.picNum - 1];
-            //    bar = (bar + 1) % Config.m_trialnum;
-            //}
-
-            //if(Config.m_auditory<=0)
-            //{
-            //    trialnum = Config.picNum;
-            //    bar = 0;
-            //    while ((trialnum--) != 0)
-            //    {
-
-            //        RanSeq_group(bar, Config.m_groups, Config.m_trialnum, OrderforSem);
-            //        sead++;
-
-            //        bar = (bar + 1) % Config.picNum;
-            //    }
-            //}           
-            
-            ////这里默认声音的数目和图片是一样的，否则要另外重新定义参数
-            //if(Config.m_auditory>=0)
-            //{
-            //    trialnum = Config.picNum;
-            //    bar = 0;
-            //    while ((trialnum--) != 0)
-            //    {
-
-            //        RanSeq_group(bar, Config.m_audi_groups, Config.m_trialnum, OrderforMusic);
-            //        sead++;
-
-            //        bar = (bar + 1) % Config.picNum;
-            //    }                
-            //}
+            // 获取播放图像
+            Loadimages(run);
 
             //要初始和恢复变量
             loop = 1;
             int trialnum = Config.m_trialnum;
 
             // 发送标志255表示开始
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);
-            DlPortWritePortUshort(0x378, (ushort)(255));
-            Thread.Sleep(10);
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(190);
-
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(1);
+            //DlPortWritePortUshort(0x378, (ushort)(255));
+            //Thread.Sleep(10);
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(190);            
+            
             while (true)
             {
                 //musicplayer.SoundLocation = Soundname[coo];     //原来每种语义只有一种声音
@@ -394,17 +367,20 @@ namespace RSVP7._0
 
                 // TODO: 发送并口消息 
                 // 即将对应的标签发送给信号采集器。训练阶段标签有意义，测试阶段，标签可能没有意义
-                DlPortWritePortUshort(0x378, (ushort)(0));
-                Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
-                DlPortWritePortUshort(0x378, (ushort)(Config.feedback[loop].label));
-                Thread.Sleep(10);
-                DlPortWritePortUshort(0x378, (ushort)(0));
+                //DlPortWritePortUshort(0x378, (ushort)(0));
+                //Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
+                //DlPortWritePortUshort(0x378, (ushort)(Config.feedback[loop].label));
+                //Thread.Sleep(10);
+                //DlPortWritePortUshort(0x378, (ushort)(0));
 
                 // 图像显示一段时间，通过线程睡眠固定时间                
                 // 每张图像显示完之后还有一段固定时间间歇，用于显示背景或者说不显示任何无效的图像
                 Thread.Sleep(Config.m_durationT-11);          // 图片显示的时间，发送并口消息时已经睡了11ms,这里减去
                 if (Config.m_tmbreak > 0)
+                {
+                    this.Invoke(sp, new object[] { 0 });
                     Thread.Sleep(Config.m_tmbreak);
+                }
 
                 if (loop >= trialnum)                         // loop从1开始，故应先判断，后决定加一
                     break;
@@ -414,11 +390,12 @@ namespace RSVP7._0
 
             // 发送标志253表示结束
             this.Invoke(sp, new object[] { 0 });
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            Thread.Sleep(1);
-            DlPortWritePortUshort(0x378, (ushort)(253));
-            Thread.Sleep(100);
-            DlPortWritePortUshort(0x378, (ushort)(0));
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //Thread.Sleep(1);
+            //DlPortWritePortUshort(0x378, (ushort)(253));
+            //Thread.Sleep(100);
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            run++;
         }
         #endregion
 
@@ -571,8 +548,25 @@ namespace RSVP7._0
         {
             if ('B' == e.command)
             {
-                //for (int i = 0; i < e.number; ++i)
-                //{ }
+                // 显示结果图片
+                Graphics ghs = this.CreateGraphics();
+                ghs.Clear(this.BackColor);
+                int h_margin = 0;
+                if (this.Size.Height > 100)
+                {
+                    h_margin = (this.Size.Height - 1000) / 2;   // 5行， 每行高200
+                }
+                int index = 0;
+                Image img;
+                for (int i = 0; i < 5; ++i)
+                {
+                    for (int j = 0; j < 4; ++j)
+                    {
+                        img = Image.FromFile(Config.feedback[index++].imagepath);
+                        ghs.DrawImage(img, new Rectangle(this.Size.Width / 2 - (2 - j) * 200, h_margin + i * 200, 200, 200));
+                    }
+                }
+                ghs.Dispose();
             }
         }
         #endregion

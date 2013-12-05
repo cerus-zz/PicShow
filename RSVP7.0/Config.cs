@@ -10,6 +10,14 @@ using System.IO;
 
 namespace RSVP7._0
 {
+    public struct Foo
+    {
+
+        public String imagepath { get; set; }             // 图像路径
+        public double score { get; set; }                // 图像获得的分值，可能是距离或者其他标准
+        public int label { get; set; }
+    };
+
     public partial class Config : Form
     {
 
@@ -19,8 +27,8 @@ namespace RSVP7._0
         public static int m_durationT;     // 每幅图片持续的时间
         public static int m_trialnum;      // 每次run的图像数
         public static int m_tmbreak;      // 每组图片显示之间的时间间隔
-        public static int m_groups;        // 语义组数,其实就是单个语义的图片个数
-        public static String m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
+        public static int m_targetnum;        // 语义组数,其实就是单个语义的图片个数
+        public static string[] m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
         public static int m_auditory;      // 是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
         public static int m_audi_groups;   // 单个语义的声音文件个数
                             
@@ -30,22 +38,14 @@ namespace RSVP7._0
         public static string ip;
         public static int port;
         PicShow psw = null;
-        public static Image[] picMap = new Image[500];  //用于存储要显示的图片
-        public static string[] Soundname = new string[500];    //取决于语义的种类
-        public struct Foo
-        {
-
-            public String imagepath { get; set; }             // 图像路径
-            public double score { get; set; }                // 图像获得的分值，可能是距离或者其他标准
-            public int label { get; set; }
-        };
-        public static Foo[] feedback = new Foo[500];
+       
+        public static string[] Soundname = new string[300];    //取决于语义的种类        
+        public static Foo[] feedback = new Foo[300];
+        public static List<Foo> allPic = new List<Foo>();
 
        // public static bool Isonshow = false;       // 显示图片的界面是否存在，用于socket线程反应前作判断
         bool IschooseFolder = false;
         bool IschooseFolder_audio = false;
-        int picAmount = 0;//图片总数
-        int audioAmount = 0; //声音数
 
         public Config()
         {
@@ -58,13 +58,13 @@ namespace RSVP7._0
              * 设置默认输入，避免空输入的异常
              */
 
-            textBox1.Text = "500";
+            textBox1.Text = "250";
             textBox2.Text = "200";
-            textBox3.Text = "500";
-            textBox4.Text = "15";
-            textBox5.Text = "0";
+            textBox3.Text = "250";
+            textBox4.Text = "10";
+            textBox5.Text = "1,2";
             textBox7.Text = "-1";
-            textBox8.Text = "20";
+            textBox8.Text = "0";
             this.Text = "Display";     //窗体的Title
             Tbox_ip.Text  = "10.14.86.174";
             Tbox_port.Text= "10086";
@@ -87,9 +87,8 @@ namespace RSVP7._0
             }
             try
             {
-                //获取循环轮数
-                m_trialnum = int.Parse(textBox2.Text.ToString());                  
-            
+                //获取没轮要播放的图片数
+                m_trialnum = int.Parse(textBox2.Text.ToString());                              
             }
             catch
             {
@@ -108,19 +107,8 @@ namespace RSVP7._0
             }
             try
             {
-                //图片组数
-                m_groups = int.Parse(textBox4.Text.ToString());
-                
-                if (IschooseFolder)
-                {
-                    if (0 == m_groups)
-                    {
-                        MessageBox.Show("Groups不能为0！");
-                        return false;
-                    }
-                    else
-                        picNum = picAmount / m_groups;
-                }
+                // 每轮中的目标图片数
+                m_targetnum = int.Parse(textBox4.Text.ToString());                           
             }
             catch
             {
@@ -129,7 +117,9 @@ namespace RSVP7._0
             }
             try
             {
-                m_evtlabel = textBox5.Text.ToString();
+                String obj = textBox5.Text.ToString();
+                char[] delimit = { ',','，'};
+                m_evtlabel = obj.Split(delimit);
             }
             catch
             {
@@ -147,17 +137,7 @@ namespace RSVP7._0
             }
             try
             {
-                m_audi_groups = int.Parse(textBox8.Text.ToString());
-                if(IschooseFolder_audio)
-                {
-                    if (m_audi_groups == 0)
-                    {
-                        MessageBox.Show("Audi-Groups不能为0！");
-                        return false;
-                    }
-                    if(!IschooseFolder)
-                        picNum = audioAmount / m_audi_groups;
-                }               
+                m_audi_groups = int.Parse(textBox8.Text.ToString());    
             }
             catch
             {
@@ -181,27 +161,56 @@ namespace RSVP7._0
             myfDialog.DisplayDialog();
 
             textBox6.Text = myfDialog.Path;
-            if (textBox6.Text!="")
+            if (textBox6.Text != "")
             {
-                DirectoryInfo theFolder = new DirectoryInfo(myfDialog.Path);
-                picAmount = 0;
-                //遍历文件夹并将图片加入数组
-                foreach (FileInfo NextFile in theFolder.GetFiles())
+                int i = 0;
+                Foo tmpFoo = new Foo();
+
+                DirectoryInfo myFolder = new DirectoryInfo(myfDialog.Path);
+                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+
+                int sublabel = tmpSubFile.Count();//获取face文件夹下子文件夹个数，即总人数
+                //MessageBox.Show(Convert.ToString(sublabel));
+                for (i = 0; i < tmpSubFile.Count(); i++)
                 {
-                    //windowsXP图片文件中以缩略图浏览后，系统自动在该文件中生成Thumbs.db（缓存Windows Explorer的缩略图的文件）
-                    if (NextFile.Name.ToString() == "Thumbs.db")
-                        continue;
-                    try
+                    FileInfo[] tmpPic = tmpSubFile[i].GetFiles();
+                
+                    foreach (FileInfo jpgFile in tmpPic)//遍历每一张图片
                     {
-                        picMap[picAmount++] = Image.FromFile(NextFile.FullName.ToString());
+                        if (".db" != jpgFile.Extension)
+                        {
+                            tmpFoo.label = Convert.ToInt32(tmpSubFile[i].Name);//获取人物文件夹编号                        
+                            tmpFoo.imagepath = jpgFile.FullName;
+                            allPic.Add(tmpFoo);//allPic list中添加一条图片信息
+                        }
+
                     }
-                    catch
-                    {
-                        MessageBox.Show(picAmount.ToString()+" "+NextFile.FullName.ToString());
-                    }
+
                 }
+
                 IschooseFolder = true;
             }
+            //if (textBox6.Text!="")
+            //{
+            //    DirectoryInfo theFolder = new DirectoryInfo(myfDialog.Path);
+            //    picAmount = 0;
+            //    //遍历文件夹并将图片加入数组
+            //    foreach (FileInfo NextFile in theFolder.GetFiles())
+            //    {
+            //        //windowsXP图片文件中以缩略图浏览后，系统自动在该文件中生成Thumbs.db（缓存Windows Explorer的缩略图的文件）
+            //        if (NextFile.Name.ToString() == "Thumbs.db")
+            //            continue;
+            //        try
+            //        {
+            //            picMap[picAmount++] = Image.FromFile(NextFile.FullName.ToString());
+            //        }
+            //        catch
+            //        {
+            //            MessageBox.Show(picAmount.ToString()+" "+NextFile.FullName.ToString());
+            //        }
+            //    }
+                
+            //}
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -239,20 +248,20 @@ namespace RSVP7._0
              * add location of audio files
              */
 
-            FolderDialog myfolderDlg = new FolderDialog();
-            myfolderDlg.DisplayDialog();
+            //FolderDialog myfolderDlg = new FolderDialog();
+            //myfolderDlg.DisplayDialog();
 
-            textBox9.Text = myfolderDlg.Path;
-            if (textBox9.Text!="")
-            {
-                DirectoryInfo myfolder = new DirectoryInfo(myfolderDlg.Path);
-                audioAmount = 0;
-                //遍历声音文件夹，添加文件的名称                     
-                foreach (FileInfo NextFile in myfolder.GetFiles())
-                    Soundname[audioAmount++] = NextFile.FullName.ToString();
+            //textBox9.Text = myfolderDlg.Path;
+            //if (textBox9.Text!="")
+            //{
+            //    DirectoryInfo myfolder = new DirectoryInfo(myfolderDlg.Path);
+            //    audioAmount = 0;
+            //    //遍历声音文件夹，添加文件的名称                     
+            //    foreach (FileInfo NextFile in myfolder.GetFiles())
+            //        Soundname[audioAmount++] = NextFile.FullName.ToString();
 
-                IschooseFolder_audio = true;
-            }    
+            //    IschooseFolder_audio = true;
+            //}    
         }
 
         // 打开服务器监听
