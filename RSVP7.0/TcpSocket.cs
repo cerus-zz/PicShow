@@ -49,7 +49,6 @@ namespace RSVP7._0
         {
             try
             {
-                int portNum = 10086;
                 // get ip address automaticly
                 //IPHostEntry ipHost = Dns.GetHostEntry(Dns.GetHostName());
                 //IPAddress[] ipAddrlist = ipHost.AddressList;
@@ -64,8 +63,8 @@ namespace RSVP7._0
                 //    }
 
                 //}
-                localip = IPAddress.Parse("10.14.86.111");
-                IPEndPoint hostEP = new IPEndPoint(localip, portNum);
+                localip = IPAddress.Parse(Config.ip);
+                IPEndPoint hostEP = new IPEndPoint(localip, Config.port);
 
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 socket.Bind(hostEP);
@@ -89,8 +88,8 @@ namespace RSVP7._0
         {
             if (socket != null) socket.Close();
             if (destSocket != null) destSocket.Close();
-            if (trServerAccept != null) trServerAccept.Abort();
-            if (trReceive != null) trReceive.Abort();
+            if (trServerAccept != null) { trServerAccept.Abort(); trServerAccept.Join(); }
+            if (trReceive != null) { trReceive.Abort(); trReceive.Join(); }
         }
 
         private void receiveMethod(object obj)
@@ -111,9 +110,8 @@ namespace RSVP7._0
                         if ('F' == command)
                         {
                             // 返回了feedback结果，告诉PicShow显示结果
-                            int size = (receiveCount) / 8;
-                            double[] res = new double[size + 2];
-                            int c = 0;
+                            int size = (receiveCount) / 8;              
+                            int count = 0;
                             for (int i = 0; i < receiveCount; i += 8)
                             {
                                 byte[] buf = new byte[8];
@@ -122,14 +120,17 @@ namespace RSVP7._0
                                     buf[j] = buffer[1+ i + j];
                                 }
                                 buf = buf.Reverse().ToArray();
-                                res[c++] = System.BitConverter.ToDouble(buf, 0);
+                                Config.feedback[count++].score = System.BitConverter.ToDouble(buf, 0);
                             }
+                            quick_sort(Config.feedback, 0, size-1);
                             FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
                             StreamWriter sw = new StreamWriter(sFile);
 
                             for (int i = 0; i < size; ++i)
                             {
-                                sw.Write(res[i]);
+                                sw.Write(Config.feedback[i].seq);
+                                sw.Write("-");
+                                sw.Write(Config.feedback[i].score);
                                 sw.Write(" ");
                             }
                             sw.Write("\r\n");
@@ -194,6 +195,34 @@ namespace RSVP7._0
         #endregion 
 
         #region VarDef & Otherfunc
+
+        // quicksort
+        private void quick_sort(Config.Foo[] res, int low, int high)
+        {
+            int l = low, h = high;
+            Config.Foo tmp = new Config.Foo();
+            while (l < h)
+            {
+                while (res[l].score <= res[low].score && l <= high) ++l;
+                while (res[h].score > res[low].score) --h;
+                tmp.score = res[l].score;
+                tmp.seq = res[l].seq;
+                res[l].seq = res[h].seq;
+                res[l].score = res[h].score;
+                res[h].score = tmp.score;
+                res[h].seq = tmp.seq;
+            }
+
+            tmp.score = res[low].score;
+            tmp.seq = res[low].seq;
+            res[low].seq = res[h].seq;
+            res[low].score = res[h].score;
+            res[h].score = tmp.score;
+            res[h].seq = tmp.seq;
+
+            if (low < h) quick_sort(res, low, h - 1);
+            if (h < high) quick_sort(res, h + 1, high);
+        }
 
         public void Getresult(Config.Foo[] map)
         {

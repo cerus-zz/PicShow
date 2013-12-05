@@ -17,17 +17,16 @@ namespace RSVP7._0
     public partial class PicShow : Form
     {
         # region Var Initialization
-        int[] RandNum = new int[200];        //大小要求取决于一组图片的张数或者同一语义图片重复的次数
-        int[] Sequence = new int[500];       //存储同一语义重复显示的随机顺序
-        int[] OrderforSem = new int[500];      //定义同一语义图片内部出现的随机顺序
-        int[] OrderforMusic = new int[500];    //定义同一语义声音内部出现的随机顺序       
+        int[] RandNum = new int[200];                         // 大小要求取决于一组图片的张数或者同一语义图片重复的次数
+        int[] Sequence = new int[500];                        // 存储同一语义重复显示的随机顺序
+        int[] OrderforSem = new int[500];                     // 定义同一语义图片内部出现的随机顺序
+        int[] OrderforMusic = new int[500];                   // 定义同一语义声音内部出现的随机顺序       
+        PictureBox[] showpictures = new PictureBox[20];       // 最后添加到flowlayoutpanel中显示图片
 
         //全局变量声明或初始化
         int seq = 0, seq_m = 0, loop = 0, round = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
         int sead;
-        System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();
-        Graphics m_tmpgr;                   //用于1000ms图片显示间隔，而图片显示500ms时，后500ms显示背景
-        //
+        System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
 
         Thread countDown;                 //倒计时线程
         Thread thr;                       //用于显示图片播放声音和发送并口消息的线程        
@@ -143,79 +142,93 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            //this.ClientSize = new Size(ws_width,ws_height); //不知道this.Size与此有什么区别
+            this.ClientSize = new Size(800, 800); //不知道this.Size与此有什么区别
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
             //pictureBox1
             pictureBox1.Size = new Size(20, 20);
             pictureBox1.Location = new Point(0, 0);
-            //pictureBox1.Size = new Size(400,400);
-            //pictureBox1.Location = new Point(ws_width/2-pictureBox1.Size.Width/2,ws_height/2-pictureBox1.Size.Height/2);            
-            //pictureBox1.BackColor = System.Drawing.Color.Gray;
-            //pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; //图片显示方式，伸缩适应
-           // pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
-            //pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-           // pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来
+            pictureBox1.Size = new Size(400, 400);
+            pictureBox1.Location = new Point(ws_width / 2 - pictureBox1.Size.Width / 2, ws_height / 2 - pictureBox1.Size.Height / 2);
+            pictureBox1.BackColor = System.Drawing.Color.Gray;
+            pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; //图片显示方式，伸缩适应        
+           //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来         
          
         }
 
         
         # region  Control
+        private void closeThread()
+        {
+            // 终止旧线程
+            try
+            {
+                if (null != countDown)
+                {
+                    countDown.Abort();
+                    countDown.Join();
+                    countDown = null;   //stopped状态下地线程不能使用.Start()方法重启故置空，等待开启新线程   
+                }
+            }
+            catch
+            {
+                MessageBox.Show("终止异常线程！");
+            }
+            try
+            {
+                if (null != thr)
+                {
+                    thr.Abort();
+                    thr.Join();
+                    thr = null;   //stopped状态下地线程不能使用.Start()方法重启故置空，等待开启新线程  
+                }
+            }
+            catch
+            {
+                MessageBox.Show("终止异常线程！");
+            }
+        }
+
         private void PicShow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
+                Graphics ghs = this.CreateGraphics();
+                ghs.Clear(this.BackColor);
+                ghs.Dispose();
+                pictureBox1.Visible = true;
                 /*
-                 * 开始倒数并显示图片
+                 * 开启新线程前，关闭旧线程
                  */
-                if (thr != null)
-                    MessageBox.Show("先按R终止之前的线程！");
-                else if (countDown == null)
+                closeThread();
+                // 开启新线程
+                if ( null == thr && countDown == null)
                 {
                     countDown = new Thread(new ThreadStart(countRun));
                     countDown.Start();
                 }                
             }
             else if (e.KeyCode == Keys.R)
-            {
+            {                
+                pictureBox1.Visible = false;
+                drawCaption("开 始", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0), Color.YellowGreen);
                 /*
                  * 终止显示图片线程并重置                 
                  */
-                if (countDown != null)
-                {
-                    try
-                    {
-                        //终止旧线程，开启新线程              
-                        countDown.Abort();
-                        countDown.Join();
-                        countDown = null;   //stopped状态下地线程不能使用.Start()方法重启故置空，等待开启新线程                    
-                    }
-                    catch
-                    {
-                        MessageBox.Show("终止异常线程！");
-                    }
-                }
-                if (thr != null)
-                {
-                    try
-                    {
-                        //终止旧线程，开启新线程              
-                        thr.Abort();
-                        thr.Join();
-                        thr = null;   //stopped状态下地线程不能使用.Start()方法重启故置空，等待开启新线程                    
-                    }
-                    catch
-                    {
-                        MessageBox.Show("终止异常线程！");
-                    }
-                }
+                closeThread();
                 pictureBox1.Image = null;
 
-                //DlPortWritePortUshort(0x378, (ushort)(0));  //并口写0，防止重新开始时，上次的数据又被写入
+                // 如果是以外中断，那么该标签将会有用
+                DlPortWritePortUshort(0x378, (ushort)(0));
+                Thread.Sleep(1);
+                DlPortWritePortUshort(0x378, (ushort)(252));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+                Thread.Sleep(10);
+                DlPortWritePortUshort(0x378, (ushort)(0));
             }
             else if (e.KeyCode == Keys.Q)
             {
+                closeThread();
                 CloseHandler(this, new EventArgs());
             }
             else
@@ -269,7 +282,6 @@ namespace RSVP7._0
 
             bg_image = RSVP7._0.Properties.Resources.bg_gray;
             my_graphics = Graphics.FromImage(bg_image);
-            m_tmpgr = my_graphics;
             my_brush = new SolidBrush(Color.Black);
             my_font = new Font("黑体", 150, FontStyle.Bold);
 
@@ -299,7 +311,7 @@ namespace RSVP7._0
         {
             try
             {
-                //终止旧倒计时线程，开启新线程
+                // 终止旧倒计时线程，开启新线程
                 countDown.Abort();
                 countDown.Join();
                 countDown = null;
@@ -317,13 +329,13 @@ namespace RSVP7._0
             trialnum = Config.m_trialnum;
             sentinel = -1;
             sead = 0;
-            while ((trialnum--) != 0)           //提前生成好图片显示次序
+            while ((trialnum--) != 0)           // 提前生成好图片显示次序
             {
                 while (true)
                 {
                     RanSeq(bar, Config.picNum, Sequence);
                     sead++;
-                    if (Sequence[bar * Config.picNum] != sentinel)   //防止语义相同的图片连续显示，
+                    if (Sequence[bar * Config.picNum] != sentinel)   // 防止语义相同的图片连续显示
                         break;
                 }
                 sentinel = Sequence[bar * Config.picNum + Config.picNum - 1];
@@ -364,10 +376,12 @@ namespace RSVP7._0
             trialnum = Config.m_trialnum;
 
             // 发送标志255表示开始
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(1);
-            //DlPortWritePortUshort(0x378, (ushort)(255));
-            //Thread.Sleep(20);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(255));
+            Thread.Sleep(10);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(190);
 
             while (true)
             {
@@ -398,31 +412,35 @@ namespace RSVP7._0
                 else
                     label = (int)(seq_m / Config.m_audi_groups) + 1;
 
-                //DlPortWritePortUshort(0x378, (ushort)(0));
-                //Thread.Sleep(1);                                  //该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
-                //DlPortWritePortUshort(0x378, (ushort)(label));
-                //Thread.Sleep(10);
-                //DlPortWritePortUshort(0x378, (ushort)(0));
+                DlPortWritePortUshort(0x378, (ushort)(0));
+                Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
+                DlPortWritePortUshort(0x378, (ushort)(label));
+                Thread.Sleep(10);
+                DlPortWritePortUshort(0x378, (ushort)(0));
 
                 if (loop != (Config.picNum - 1))
-                    Thread.Sleep(Config.m_durationT-1);         //图片显示的时间，发送并口消息时已经睡了1ms,这里减去
+                    Thread.Sleep(Config.m_durationT-1);           // 图片显示的时间，发送并口消息时已经睡了1ms,这里减去
 
                 else if ((Config.picNum - 1) == loop)
                 {
                     trialnum--;
                     round = (round + 1) % Config.m_trialnum;
 
+                    Thread.Sleep(Config.m_durationT - 1);
                     if (0 == trialnum)
                     {
-                        //MessageBox.Show("Over!");
+                        // 下面空白间隔时间
+                        if (Config.m_auditory <= 0)
+                        {
+                            this.Invoke(sp, new object[] { 0 });
+                            Thread.Sleep(1000);   // 保证最后一个图像显示至少1s钟，一个run才结束
+                        }
                         break;
                     }
-                    else
-                        Thread.Sleep(Config.m_interval-1);
                 }
                 /*
-                 *纯听觉刺激被改成了1000ms,刺激是500ms
-                 *因此视觉刺激这里，图片显示500ms后，也要显示背景500ms
+                 * 纯听觉刺激被改成了1000ms,刺激是500ms
+                 * 因此视觉刺激这里，图片显示500ms后，也要显示背景500ms
                  *
                  * 如果要改掉这点，可以先删掉下面这段代码，然后再将showPicture()
                  * 中的if(seq!=0) else 代码段给去掉，其他地方都不用变                
@@ -430,7 +448,7 @@ namespace RSVP7._0
                 if (Config.m_auditory <= 0)
                 {
                     this.Invoke(sp, new object[] { 0 });
-                    Thread.Sleep(500);
+                    Thread.Sleep(Config.m_durationT - 1);
                 }
                 //---------------------------------------------------------
 
@@ -438,9 +456,12 @@ namespace RSVP7._0
             }
 
             // 发送标志253表示结束
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(250);                
-            //DlPortWritePortUshort(0x378, (ushort)(253));
+            this.Invoke(sp, new object[] { 0 });
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(253));
+            Thread.Sleep(100);
+            DlPortWritePortUshort(0x378, (ushort)(0));
         }
         #endregion
 
@@ -448,19 +469,19 @@ namespace RSVP7._0
         private void PicShow_MouseClick(object sender, MouseEventArgs e)
         {
             //这个并口消息会不会干扰显示图像同时发的并口消息？           
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(1);                                   
-            //DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
-            //Thread.Sleep(10);
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //MessageBox.Show("there is a object");
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+            Thread.Sleep(10);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            MessageBox.Show("there is a object");
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(1);
-            //DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
         }//end thrRun;
         # endregion Record click behavior
 
@@ -491,36 +512,53 @@ namespace RSVP7._0
                 socket.CommandHandler -= Tcp_F_Handler;
             }
         }
+
+        private void drawCaption(string caption, Rectangle rect, Color color)
+        {
+            Graphics my_graphics = this.CreateGraphics();
+            Brush my_brush = new SolidBrush(color);
+            Font my_font = new Font("黑体", 80, FontStyle.Bold);
+
+            pictureBox1.Visible = false;
+            my_graphics.Clear(this.BackColor);
+            //Rectangle rect = new Rectangle(pictureBox1.Location.X + 150, this.Height / 2 - my_font.Height, pictureBox1.Width, my_font.Height);
+            my_graphics.DrawString(caption, my_font, my_brush, 
+                new Rectangle(rect.X-(my_font.Height * rect.Y/2), rect.Width-my_font.Height/2,rect.Y * my_font.Height, my_font.Height));
+            my_graphics.Dispose();
+            my_font.Dispose();
+            my_brush.Dispose();
+        }
+
         // command handler functions
         private void Tcp_A_Handler(Object sender, CommandEventArgs e)
         {
             if ('A' == e.command)
-            {
-                MessageBox.Show("A");
+            {                
+                drawCaption("休 息", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0),Color.Green);
             }
         }
 
         private void Tcp_B_Handler(Object sender, CommandEventArgs e)
         {
             if ('B' == e.command)
-            {
-                MessageBox.Show("B");
+            {                
+                drawCaption("训练 结束", new Rectangle(this.Size.Width/2, 5, this.Size.Height/2, 0), Color.Yellow);
             }
         }
 
         private void Tcp_C_Handler(Object sender, CommandEventArgs e)
         {
             if ('C' == e.command)
-            {
-                MessageBox.Show("C");
+            {                
+                drawCaption("等待 结果", new Rectangle(this.Size.Width / 2, 5, this.Size.Height / 2, 0), Color.Violet);
             }
         }
 
         private void Tcp_S_Handler(Object sender, CommandEventArgs e)
         {
             if ('S' == e.command)
-            {
-                MessageBox.Show("S");
+            {                
+                drawCaption("开 始", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0), Color.YellowGreen);
             }
         }
 
@@ -528,7 +566,24 @@ namespace RSVP7._0
         {
             if ('F' == e.command)
             {
-                MessageBox.Show("F");
+                // 用flowlayoutpanel显示结果
+                Graphics ghs = this.CreateGraphics();
+                ghs.Clear(this.BackColor);
+                int h_margin = 0;
+                if (this.Size.Height > 100)
+                {
+                    h_margin = (this.Size.Height - 1000) / 2;   // 5行， 每行高200
+                }
+                int index = 0;
+                for (int i = 0; i < 5; ++i)
+                {
+                    for (int j = 0; j < 4; ++j)
+                    {
+                        ghs.DrawImage(Config.picMap[0], new Rectangle(this.Size.Width/2-(2-j)*200, h_margin + i*200, 200, 200));
+                    }
+                }
+                ghs.Dispose();
+                
             }
         }       
         #endregion

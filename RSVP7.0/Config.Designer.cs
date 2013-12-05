@@ -50,8 +50,14 @@
             this.label2 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.Tbox_port = new System.Windows.Forms.TextBox();
+            this.Ipaddress = new System.Windows.Forms.Label();
+            this.Tbox_ip = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
             this.Btn_startServer = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // button2
@@ -90,7 +96,7 @@
             this.groupBox1.Font = new System.Drawing.Font("宋体", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.groupBox1.Location = new System.Drawing.Point(23, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(528, 518);
+            this.groupBox1.Size = new System.Drawing.Size(521, 518);
             this.groupBox1.TabIndex = 21;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Configuration for parameters";
@@ -270,10 +276,44 @@
             this.label1.TabIndex = 21;
             this.label1.Text = "Duration for showing a image";
             // 
+            // Tbox_port
+            // 
+            this.Tbox_port.Location = new System.Drawing.Point(5, 170);
+            this.Tbox_port.Name = "Tbox_port";
+            this.Tbox_port.Size = new System.Drawing.Size(186, 21);
+            this.Tbox_port.TabIndex = 24;
+            // 
+            // Ipaddress
+            // 
+            this.Ipaddress.AutoSize = true;
+            this.Ipaddress.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.Ipaddress.Location = new System.Drawing.Point(5, 83);
+            this.Ipaddress.Name = "Ipaddress";
+            this.Ipaddress.Size = new System.Drawing.Size(67, 17);
+            this.Ipaddress.TabIndex = 25;
+            this.Ipaddress.Text = "Ipaddress";
+            // 
+            // Tbox_ip
+            // 
+            this.Tbox_ip.Location = new System.Drawing.Point(5, 112);
+            this.Tbox_ip.Name = "Tbox_ip";
+            this.Tbox_ip.Size = new System.Drawing.Size(186, 21);
+            this.Tbox_ip.TabIndex = 23;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("微软雅黑", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(8, 146);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(30, 16);
+            this.label10.TabIndex = 26;
+            this.label10.Text = "Port";
+            // 
             // Btn_startServer
             // 
             this.Btn_startServer.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Btn_startServer.Location = new System.Drawing.Point(569, 21);
+            this.Btn_startServer.Location = new System.Drawing.Point(34, 20);
             this.Btn_startServer.Name = "Btn_startServer";
             this.Btn_startServer.Size = new System.Drawing.Size(137, 46);
             this.Btn_startServer.TabIndex = 22;
@@ -281,12 +321,26 @@
             this.Btn_startServer.UseVisualStyleBackColor = true;
             this.Btn_startServer.Click += new System.EventHandler(this.Btn_startServer_Click);
             // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.Btn_startServer);
+            this.groupBox2.Controls.Add(this.Tbox_ip);
+            this.groupBox2.Controls.Add(this.label10);
+            this.groupBox2.Controls.Add(this.Ipaddress);
+            this.groupBox2.Controls.Add(this.Tbox_port);
+            this.groupBox2.Location = new System.Drawing.Point(547, 13);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(191, 210);
+            this.groupBox2.TabIndex = 27;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Connect";
+            // 
             // Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(734, 557);
-            this.Controls.Add(this.Btn_startServer);
+            this.ClientSize = new System.Drawing.Size(739, 557);
+            this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.button2);
             this.Name = "Config";
@@ -294,6 +348,8 @@
             this.Load += new System.EventHandler(this.Config_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -322,7 +378,12 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.TextBox Tbox_port;
+        private System.Windows.Forms.Label Ipaddress;
+        private System.Windows.Forms.TextBox Tbox_ip;
+        private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Button Btn_startServer;
+        private System.Windows.Forms.GroupBox groupBox2;
     }
 }
 

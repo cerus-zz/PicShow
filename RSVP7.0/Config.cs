@@ -26,6 +26,8 @@ namespace RSVP7._0
                             
         public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
         TcpSocket myServer = null;
+        public static string ip;
+        public static int port;
         PicShow psw = null;
         public static Image[] picMap = new Image[500];  //用于存储要显示的图片
         public static string[] Soundname = new string[500];    //取决于语义的种类
@@ -64,6 +66,8 @@ namespace RSVP7._0
             textBox7.Text = "-1";
             textBox8.Text = "20";
             this.Text = "Display";     //窗体的Title
+            Tbox_ip.Text  = "10.14.86.174";
+            Tbox_port.Text= "10086";
         }
 
         #region Get Parameters
@@ -253,6 +257,8 @@ namespace RSVP7._0
         {
             if (null == myServer)
             {
+                ip = Tbox_ip.Text;
+                port = System.Int32.Parse(Tbox_port.Text);
                 myServer = new TcpSocket();
                 myServer.startHost();
                 Btn_startServer.Text = "Stop Server";
