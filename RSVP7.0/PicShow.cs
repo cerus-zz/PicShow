@@ -19,10 +19,9 @@ namespace RSVP7._0
         # region Var Initialization      
 
         //全局变量声明或初始化
-        Image[] picMap = new Image[300];  //用于存储要显示的图片
+        
         int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
-        int run = 0;
-        bool inTrial = false;   // 实验是否正在进行，用于判断是否某轮实验被打断
+        int run = 0;       
         System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
 
         Thread countDown;                 // 倒计时线程
@@ -37,6 +36,7 @@ namespace RSVP7._0
         // 因为需要在主界面的实例中调用remove_Handler方法，避免事件残留！！！
         public event CloseEventHandler CloseHandler;
         private delegate void flowImage(Point location, Size size, int count);
+        private delegate void remove_flowImage();
                     
         //并口操作
         [DllImport("DLPORTIO.dll", EntryPoint = "DlPortWritePortUshort", ExactSpelling = false, CharSet = CharSet.Unicode, SetLastError = true)]
@@ -64,8 +64,8 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别           
-            //this.ClientSize = new Size(800, 800);
+            //this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别           
+            this.ClientSize = new Size(800, 800);
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
@@ -267,7 +267,7 @@ namespace RSVP7._0
 
             for (int i = 0; i < Config.m_trialnum; ++i)
             {
-                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
+                Config.picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
             }
         }
 
@@ -389,7 +389,7 @@ namespace RSVP7._0
             if (Config.m_auditory <= 0)
             {
                 if (seq != 0)                                  //传入参数时图片数组下标已经增1了，故代表图片标号从1开始
-                    pictureBox1.Image = picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
+                    pictureBox1.Image = Config.picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
                 else
                     pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
             }
@@ -571,7 +571,8 @@ namespace RSVP7._0
         {
             if ('A' == e.command)
             {
-                this.Controls.RemoveByKey("flowimages");
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi, new object[] {});
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -583,7 +584,8 @@ namespace RSVP7._0
         {
             if ('B' == e.command)
             {
-                this.Controls.RemoveByKey("flowimages");
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi);
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -595,7 +597,8 @@ namespace RSVP7._0
         {
             if ('C' == e.command)
             {
-                this.Controls.RemoveByKey("flowimages");
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi);
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -607,7 +610,8 @@ namespace RSVP7._0
         {
             if ('S' == e.command)
             {
-                this.Controls.RemoveByKey("flowimages");
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi);
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -622,12 +626,12 @@ namespace RSVP7._0
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
 
-                // handler似乎在触发它事件的线程里运行
-                // 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
-                // 而不是PicShow实例所处的线程中。
-                // 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
-                //
-                // 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+                 //handler似乎在触发它事件的线程里运行
+                 //如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
+                 //而不是PicShow实例所处的线程中。
+                 //故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
+                
+                 //因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
                 try
                 {
                     flowImage flg = new flowImage(display);
@@ -641,7 +645,7 @@ namespace RSVP7._0
 
                 // title               
                 // 这时统计结果都是与前一轮有关，轮数已经加一了，故下面要减一！！
-                int objLabel = Config.m_evtlabel[run-1];
+                int objLabel = Config.m_evtlabel[run - 1];
 
                 float accuracy = 0;
                 for (int i = 0; i < Config.m_trialnum; ++i)
@@ -660,8 +664,8 @@ namespace RSVP7._0
                 drawCaption("本轮目标", new SizeF(-(this.Width / 2 - sz.Width / 2) + 70, -(this.Height / 2 - sz.Height / 2) + 250), Color.Blue, 40);
                 Image img;
                 DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
-                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();       
-                FileInfo[] tmpPic = tmpSubFile[objLabel - 1].GetFiles();               
+                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+                FileInfo[] tmpPic = tmpSubFile[objLabel - 1].GetFiles();
                 for (int i = 0; i < 2; ++i)
                 {
                     if (".db" != tmpPic[i].Extension)
@@ -676,7 +680,7 @@ namespace RSVP7._0
                 anpen.Width = 4;
                 Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
                 myplot.Plotaxis();
-                float auc = myplot.PlotRoc(Config.feedback, 20, objLabel);             
+                float auc = myplot.PlotRoc(Config.feedback, 20, objLabel);
                 sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
                 drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);
 
@@ -688,8 +692,9 @@ namespace RSVP7._0
         private void Client_A_Handler(Object sender, CommandEventArgs e)
         {
             if ('A' == e.command)
-            {               
-                this.Controls.RemoveByKey("flowimages");
+            {
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi, new object[] {});
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -704,6 +709,8 @@ namespace RSVP7._0
         {
             if ('B' == e.command)
             {
+                remove_flowImage rfi = new remove_flowImage(remove_display);
+                this.Invoke(rfi);
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
                 // 显示结果图片
@@ -734,8 +741,8 @@ namespace RSVP7._0
                 PictureBox tmp = new PictureBox();
                 tmp.Size = new Size(150, 150);
                 tmp.SizeMode = PictureBoxSizeMode.Zoom;
-                tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
-                //tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
+                //tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
+                tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
                 fllp.Controls.Add(tmp);
             }
 
@@ -744,6 +751,15 @@ namespace RSVP7._0
             fllp.AutoScroll = true;
             fllp.FlowDirection = FlowDirection.LeftToRight;         
             fllp.Visible = true;            
+        }
+
+        // 代理实现函数，从PicShow的窗体中删除flowLayoutPanel的实例
+        private void remove_display()
+        {
+            this.Controls.RemoveByKey("flowimages");
+            Graphics ghs = this.CreateGraphics();
+            ghs.Clear(this.BackColor);
+            ghs.Dispose();
         }
         #endregion
     }

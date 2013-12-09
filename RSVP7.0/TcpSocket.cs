@@ -136,11 +136,17 @@ namespace RSVP7._0
                             sw.Write("\r\n");
                             sw.Close();
                             sFile.Close();
-
+                                                        
                             CommandEventArgs e = new CommandEventArgs();
+                            // 通知界面显示结果
                             e.command = 'F';
                             e.number = count;
                             CommandHandler(this, e);
+
+                            // 通知客户端发送结果给机器处理
+                            e.command = 's';
+                            e.number = 5;
+                            CommandHandler(this, e);                
                         }
                         else if ('A' == command)
                         {
@@ -221,11 +227,15 @@ namespace RSVP7._0
             if (h < high) quick_sort(res, h + 1, high);
         }
 
-        public void get_Handler(PicShow psw)
+        public void get_Handler(PicShow psw, TcpClient tc)
         {
             if (null != psw)
             {
                 psw.add_Handler(this, null);
+            }
+            if (null != tc)
+            {
+                tc.add_Handler(this);
             }
         }
 

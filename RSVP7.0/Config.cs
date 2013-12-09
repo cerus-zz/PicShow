@@ -38,7 +38,8 @@ namespace RSVP7._0
         public static string ip;
         public static int port;
         PicShow psw = null;
-       
+
+        public static Image[] picMap = new Image[300];  //用于存储要显示的图片
         public static string[] Soundname = new string[300];    //取决于语义的种类        
         public static Foo[] feedback = new Foo[300];
         public static List<Foo> allPic = new List<Foo>();
@@ -254,7 +255,7 @@ namespace RSVP7._0
                 myServer = new TcpSocket(ip, port);
                 myServer.startHost();
                 Btn_startServer.Text = "Stop Server";
-                myServer.get_Handler(psw);
+                myServer.get_Handler(psw, myClient);
             }
             else
             {
@@ -275,11 +276,13 @@ namespace RSVP7._0
                 myClient = new TcpClient(ip, port);
                 myClient.connectTohost();
                 myClient.get_Handler(psw);
+                myClient.add_Handler(myServer);
                 Btn_cntToclient.Text = "DisConnect";
             }
             else
             {
                 if (psw != null) psw.remove_Handler(null, myClient);
+                myClient.remove_Handler(myServer);
                 myClient.disconnect();               
                 myClient = null;
                 Btn_cntToclient.Text = "Connect";

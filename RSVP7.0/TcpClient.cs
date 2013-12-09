@@ -30,7 +30,7 @@ namespace RSVP7._0
             }
             catch (Exception ey)
             {
-                MessageBox.Show("服务器没有开启\r\n" + ey.Message);
+                MessageBox.Show( ey.Message);
             }
         }
 
@@ -40,7 +40,8 @@ namespace RSVP7._0
             {
                 if (null != socket)
                 {
-                    socket.Disconnect(false);
+                    socket.Disconnect(false);  
+                    socket.Close();
                 }
                 if (null != thread)
                 {
@@ -56,19 +57,35 @@ namespace RSVP7._0
         private void Process()
         {
             if (socket.Connected)
-            {              
-                while (true)
+            {
+                SendData(this, new CommandEventArgs());
+                try
                 {
-                    byte[] receiveByte = new byte[8000];
-                    socket.Receive(receiveByte, receiveByte.Length, 0);
-                    string Info = Encoding.ASCII.GetString(receiveByte);
-                    string[] tmp = Info.Split(';');
-                    if ('A' == Info[0])
+                    while (true)
                     {
-                        // 结果的图像相似度差，重新获取结果图像                        
-                        if (tmp.Length - 1 != Config.m_trialnum)
-                            MessageBox.Show("number of images come back from Server doesnot equal to Trial Number!");
-                        else
+                        byte[] receiveByte = new byte[8000];
+                        socket.Receive(receiveByte, receiveByte.Length, 0);
+                        string Info = Encoding.ASCII.GetString(receiveByte);
+                        string[] tmp = Info.Split(';');
+                        if ('A' == Info[0])
+                        {
+                            // 结果的图像相似度差，重新获取结果图像                        
+                            if (tmp.Length - 1 != Config.m_trialnum)
+                                MessageBox.Show("number of images come back from Server doesnot equal to Trial Number!");
+                            else
+                            {
+                                for (int i = 1; i < tmp.Length; ++i)
+                                {
+                                    Config.feedback[i].imagepath = tmp[i];
+                                }
+
+                                CommandEventArgs e = new CommandEventArgs();
+                                e.command = 'A';
+                                CommandHandler(this, e);
+                            }
+
+                        }
+                        else if ('B' == Info[0])
                         {
                             for (int i = 1; i < tmp.Length; ++i)
                             {
@@ -76,47 +93,45 @@ namespace RSVP7._0
                             }
 
                             CommandEventArgs e = new CommandEventArgs();
-                            e.command = 'A';
+                            e.command = 'B';
+                            e.number = tmp.Length - 1;
                             CommandHandler(this, e);
                         }
-
-                    }
-                    else if ('B' == Info[0])
-                    {
-                        for (int i = 1; i < tmp.Length; ++i)
+                        else
                         {
-                            Config.feedback[i].imagepath = tmp[i];
+                            //do nothing
+                            MessageBox.Show("connected!");
                         }
-
-                        CommandEventArgs e = new CommandEventArgs();
-                        e.command = 'B';
-                        e.number = tmp.Length - 1;
-                        CommandHandler(this, e);
                     }
-                    else
-                    {
-                        //do nothing
-                    }
-                                      
+                }
+                catch
+                {
+                    // 服务器端主动断开了连接，关闭客户端
+                    socket.Close();
+                    socket = null;
                 }
             }
 
         }
 
-        public void SendData(String[] imagename, int quantity)
+        public void SendData(Object sender, CommandEventArgs e)
         {
-            try
+            if ('s' == e.command)
             {
-                String content = null;
-                for (int i = 0; i < quantity; ++i)
+                try
                 {
-                    content += imagename[i];
-                    content += ";";
+                    //String content = "F:\\dgdgd\\dgdg\\s.txt";
+                    String content = null;
+                    for (int i = 0; i < e.number; ++i)
+                    {
+                        content += Config.feedback[i].imagepath;
+                        content += ";";
+                    }
+                    byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
+                    socket.Send(sendBuffer, sendBuffer.Length, 0);
                 }
-                byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
-                socket.Send(sendBuffer, sendBuffer.Length, 0);
+                catch { }
             }
-            catch { }
 
         }
 
@@ -127,6 +142,22 @@ namespace RSVP7._0
             if (null != psw)
             {
                 psw.add_Handler(null, this);
+            }
+        }
+
+        public void add_Handler(TcpSocket ts)
+        {
+            if (null != ts)
+            {
+                ts.CommandHandler += SendData;
+            }
+        }
+
+        public void remove_Handler(TcpSocket ts)
+        {
+            if (null != ts)
+            {
+                ts.CommandHandler -= SendData;
             }
         }
 
