@@ -61,7 +61,7 @@ namespace RSVP7._0
                 {
                     byte[] receiveByte = new byte[8000];
                     socket.Receive(receiveByte, receiveByte.Length, 0);
-                    string Info = Encoding.BigEndianUnicode.GetString(receiveByte);
+                    string Info = Encoding.ASCII.GetString(receiveByte);
                     string[] tmp = Info.Split(';');
                     if ('A' == Info[0])
                     {
@@ -95,7 +95,7 @@ namespace RSVP7._0
                     }
                     else
                     {
-                        MessageBox.Show("unkown command\n");
+                        //do nothing
                     }
                                       
                 }
@@ -113,7 +113,7 @@ namespace RSVP7._0
                     content += imagename[i];
                     content += ";";
                 }
-                byte[] sendBuffer = Encoding.BigEndianUnicode.GetBytes(content.ToCharArray());
+                byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
                 socket.Send(sendBuffer, sendBuffer.Length, 0);
             }
             catch { }

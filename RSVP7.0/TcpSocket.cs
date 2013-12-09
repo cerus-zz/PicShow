@@ -99,7 +99,7 @@ namespace RSVP7._0
                         if ('F' == command)
                         {
                             // 返回了feedback结果，告诉PicShow显示结果
-                            int size = (receiveCount) / 8;              
+                            //int size = (receiveCount-1) / 8;              
                             int count = 0;
                             for (int i = 0; i < receiveCount; i += 8)
                             {
@@ -111,24 +111,35 @@ namespace RSVP7._0
                                 buf = buf.Reverse().ToArray();
                                 Config.feedback[count++].score = System.BitConverter.ToDouble(buf, 0);
                             }
-                            quick_sort(Config.feedback, 0, size-1);
+                            
                             FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
                             StreamWriter sw = new StreamWriter(sFile);
-
-                            for (int i = 0; i < size; ++i)
+                            sw.Write(count);
+                            sw.Write(" &&&&\r\n");
+                            for (int i = 0; i < Config.m_trialnum; ++i)
                             {
-                                sw.Write(Config.feedback[i].imagepath);
+                                sw.Write(Config.feedback[i].label);
                                 sw.Write("-");
                                 sw.Write(Config.feedback[i].score);
-                                sw.Write(" ");
+                                sw.Write("\r\n");
                             }
                             sw.Write("\r\n");
                             sw.Flush();
+                            quick_sort(Config.feedback, 0, Config.m_trialnum - 1);
+                            for (int i = 0; i < Config.m_trialnum; ++i)
+                            {
+                                sw.Write(Config.feedback[i].label);
+                                sw.Write("-");
+                                sw.Write(Config.feedback[i].score);
+                                sw.Write("\r\n");
+                            }
+                            sw.Write("\r\n");
                             sw.Close();
                             sFile.Close();
 
                             CommandEventArgs e = new CommandEventArgs();
                             e.command = 'F';
+                            e.number = count;
                             CommandHandler(this, e);
                         }
                         else if ('A' == command)
@@ -192,8 +203,8 @@ namespace RSVP7._0
             Foo tmp = new Foo();
             while (l < h)
             {
-                while (l <= high && res[l].score <= res[low].score) ++l;
-                while (res[h].score > res[low].score) --h;
+                while (l <= high && res[l].score >= res[low].score) ++l;   // 降序排列！！
+                while (res[h].score < res[low].score) --h;
                 if (l < h)
                 {
                     tmp = res[h];

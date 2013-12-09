@@ -21,119 +21,29 @@ namespace RSVP7._0
         //全局变量声明或初始化
         Image[] picMap = new Image[300];  //用于存储要显示的图片
         int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
-        static int run = 0;
+        int run = 0;
+        bool inTrial = false;   // 实验是否正在进行，用于判断是否某轮实验被打断
         System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
 
         Thread countDown;                 // 倒计时线程
         Thread thr;                       // 用于显示图片播放声音和发送并口消息的线程        
 
         private delegate void showPic(int seq);  //定义一个代理用于子线程在主窗体中的控件中显示图片
-        private delegate void count(string num, Image bg_image, 
-            Graphics my_graphics, Brush my_brush, Font my_font); //用于显示倒计时的数字
-        private delegate void clean(Graphics my_graphics);           //用于清空计数
+        //private delegate void count(string num, Image bg_image, 
+        //    Graphics my_graphics, Brush my_brush, Font my_font); //用于显示倒计时的数字
+        private delegate void count(string num, SizeF amend, Color color, float fontsize); //用于显示倒计时的数字
+        private delegate void clean();           //用于清空计数
         // 该事件，是让关闭该界面窗口的操作推迟到主界面（config）中，
         // 因为需要在主界面的实例中调用remove_Handler方法，避免事件残留！！！
         public event CloseEventHandler CloseHandler;
-
+        private delegate void flowImage(Point location, Size size, int count);
+                    
         //并口操作
         [DllImport("DLPORTIO.dll", EntryPoint = "DlPortWritePortUshort", ExactSpelling = false, CharSet = CharSet.Unicode, SetLastError = true)]
         static extern void DlPortWritePortUshort(uint Port, ushort Value);
 
         # endregion Var Initialization
-
-        # region Generate random sequnce for display
-
-        private void Loadimages(int runnum)
-        {
-            MessageBox.Show(Config.m_evtlabel[runnum]);
-            GetImage(Convert.ToInt32(Config.m_evtlabel[runnum]));
-            
-            // 利用对随机数排序乱序播放次序
-            disorder(Config.feedback, Config.m_trialnum);
-
-            for (int i = 0; i < Config.m_trialnum; ++i)
-            {
-                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
-            }
-        }
-
-        // 获取给定目标的播放图像子集
-        private void GetImage(int targetLabel)
-        {
-            
-            List<Foo> tmpTarPic = new List<Foo>();//存放目标图片信息
-            List<Foo> tmpnTarPic = new List<Foo>();//存放非目标图片信息
-            int index = 0;
-            //遍历每一张图片，将图片分为目标图片和非目标图片，分别存在tmpTarPic和tmpnTarPic
-            foreach (Foo theFoo in Config.allPic)
-            {
-                if (theFoo.label == targetLabel)
-                    tmpTarPic.Add(theFoo);
-                else
-                    tmpnTarPic.Add(theFoo);
-            }
-
-            //罗列出目标图片
-            int[] tmpTarLabel = new int[Config.m_targetnum];
-            tmpTarLabel = myRan(tmpTarPic.Count, tmpTarPic.Count - 1, 0, Config.m_targetnum);
-            foreach (int eTarLabel in tmpTarLabel)
-            {
-                Config.feedback[index++] = tmpTarPic[eTarLabel];
-            }
-            
-            //罗列出非目标图片，放入nTargetPic
-            int[] tmpnTarLabel = new int[Config.m_trialnum - Config.m_targetnum];
-            tmpnTarLabel = myRan(tmpnTarPic.Count, tmpnTarPic.Count - 1, 0, Config.m_trialnum - Config.m_targetnum);
-            foreach (int enTarLabel in tmpnTarLabel)
-            {
-                Config.feedback[index++] = tmpnTarPic[enTarLabel];
-            }
-             
-        }
-
-        //产生随机数
-        private int[] myRan(int inNum, int upLimit, int lowLimit, int outNum)
-        {
-            int[] index = new int[inNum];
-            int[] result = new int[outNum];
-
-            for (int i = 0; i < inNum; i++)
-                index[i] = i;
-
-            Random ran = new Random();
-
-            int site = inNum;
-            int id;
-
-            for (int j = 0; j < outNum; j++)
-            {
-                id = ran.Next(0, site - 1);                
-                result[j] = index[id];
-                index[id] = index[site - 1];
-                site--;
-            }
-
-            return result;
-        }
-
-        // 乱序
-        private void disorder(Foo[] arr, int size)
-        {
-            Random seed = new Random(System.Guid.NewGuid().GetHashCode() + 1 * 3456575);
-            Foo tmp = new Foo();
-            int rand = 0;
-            for (int i = 0; i < size; ++i)
-            {
-                rand = seed.Next(i, size-1);
-                tmp = arr[i];
-                arr[i] = arr[rand];
-                arr[rand] = tmp;
-            }
-        }
-        //---------------------------------------------------------------------------
-
-        # endregion
-
+       
         public PicShow()
         {
             InitializeComponent();
@@ -154,7 +64,8 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别
+            this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别           
+            //this.ClientSize = new Size(800, 800);
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
@@ -164,7 +75,7 @@ namespace RSVP7._0
             pictureBox1.BackColor = System.Drawing.Color.Gray;
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom; //图片显示方式，伸缩适应        
            //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来         
-         
+
         }
 
         
@@ -203,8 +114,9 @@ namespace RSVP7._0
         private void PicShow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
-            {               
-                Graphics ghs = this.CreateGraphics();
+            {
+                this.Controls.RemoveByKey("flowimages");
+                Graphics ghs = this.CreateGraphics();            
                 ghs.Clear(this.BackColor);
                 ghs.Dispose();
                 pictureBox1.Visible = false;
@@ -212,17 +124,22 @@ namespace RSVP7._0
                  * 开启新线程前，关闭旧线程
                  */
                 closeThread();
-                // 开启新线程
+                // 开启新线程，同时加载播放图像
                 if ( null == thr && countDown == null)
                 {
                     countDown = new Thread(new ThreadStart(countRun));
-                    countDown.Start();
+                    countDown.Start();              
+                    Loadimages(run);
                 }                
             }
             else if (e.KeyCode == Keys.R)
             {                
+                this.Controls.RemoveByKey("flowimages");
                 pictureBox1.Visible = false;
-                drawCaption("开 始", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0), Color.YellowGreen);
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
+                drawCaption("开 始", new SizeF(0,0), Color.Cyan, 80);
                 /*
                  * 终止显示图片线程并重置                 
                  */
@@ -241,6 +158,96 @@ namespace RSVP7._0
                 closeThread();
                 CloseHandler(this, new EventArgs());
             }
+            else if (e.KeyCode == Keys.Space)
+            {
+                this.Controls.RemoveByKey("flowimages");
+                pictureBox1.Visible = false;
+                Graphics ghs = this.CreateGraphics();
+                ghs.Clear(this.BackColor);
+                Image img;
+                
+                DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
+                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+                FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[run]-1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始
+
+                // 显示caption和目标图像事例
+                drawCaption("本轮 目标", new SizeF(0, -200), Color.BurlyWood, 30);          
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (".db" != tmpPic[i].Extension)
+                    {
+                        img = Image.FromFile(tmpPic[i].FullName);
+                        ghs.DrawImage(img, new Rectangle(this.Size.Width/2 - (1-i)*200 - 10+i*20, this.Size.Height/2 - 200/2, 200, 200));
+                    }
+
+                }
+                ghs.Dispose();
+            }
+            else if (e.KeyCode == Keys.J)
+            {
+                //Graphics ghs = this.CreateGraphics();
+                //ghs.Clear(this.BackColor);
+              
+                //// handler似乎在触发它事件的线程里运行
+                //// 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
+                //// 而不是PicShow实例所处的线程中。
+                //// 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
+                ////
+                //// 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+                //try
+                //{
+                //    flowImage flg = new flowImage(display);
+                //    this.Invoke(flg, new object[] { new Point(this.Width/2 - 800/2, 150), new Size(800, 800), 20 });
+                //}
+                //catch (Exception ex)
+                //{
+                //    MessageBox.Show(ex.ToString());
+                //}
+
+
+                //// title
+                //Font my_font = new Font("黑体", 40, FontStyle.Bold);
+                //SizeF sz = ghs.MeasureString("EEG搜索图像的结果 >>>    准确率：", my_font);
+                //drawCaption("EEG搜索图像的结果 >>>    准确率：", new SizeF(-(this.Width / 2 - sz.Width / 2) + 10, -(this.Height / 2 - sz.Height / 2) + 50), Color.BurlyWood, 40);
+
+                //// target 
+                //my_font = new Font("黑体", 30, FontStyle.Bold);
+                //sz = ghs.MeasureString("本轮目标", my_font);
+                //drawCaption("本轮目标", new SizeF(-(this.Width / 2 - sz.Width / 2) + 70, -(this.Height / 2 - sz.Height / 2) + 250), Color.Blue, 40);
+                //Image img;
+                //DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
+                //DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+                //FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[run] - 1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始            
+                //for (int i = 0; i < 2; ++i)
+                //{
+                //    if (".db" != tmpPic[i].Extension)
+                //    {
+                //        img = Image.FromFile(tmpPic[i].FullName);
+                //        ghs.DrawImage(img, new Rectangle(20 +i*170, 270 + Convert.ToInt32(sz.Height), 150, 150));
+                //    }
+
+                //}
+                //// roc
+                //Pen anpen = new Pen(Color.Coral);
+                //anpen.Width = 4;
+                //Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
+                //myplot.Plotaxis();
+                //float[] x = { 1, 1, -1, 1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, -1, 1, -1, 1, -1 };
+                //float[] y = { 0.9f, 0.8f, 0.7f, 0.6f, 0.55f, 0.54f, 0.53f, 0.52f, 0.51f, 0.505f, 0.4f, 0.39f, 0.38f, 0.37f, 0.36f, 0.35f, 0.34f, 0.33f, 0.30f, 0.1f };
+                //PointF[] org = new PointF[20];
+                //for (int i = 0; i < 20; ++i)
+                //{
+
+                //    org[i].X = x[i];
+                //    org[i].Y = y[i];
+                //}
+                //float auc = myplot.PlotRoc(org, 20, 1);
+             
+                //sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
+                //drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);              
+                
+                //ghs.Dispose();
+            }
             else
                 MessageBox.Show("开始：Enter；重置：R；退出：Q");
 
@@ -248,24 +255,133 @@ namespace RSVP7._0
 
         # endregion Control
 
+        # region Generate random sequnce for display
+
+        private void Loadimages(int runnum)
+        {
+            //MessageBox.Show(Config.m_evtlabel[runnum]);
+            GetImage(Config.m_evtlabel[runnum]);
+
+            // 利用对随机数排序乱序播放次序
+            disorder(Config.feedback, Config.m_trialnum);
+
+            for (int i = 0; i < Config.m_trialnum; ++i)
+            {
+                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
+            }
+        }
+
+        // 获取给定目标的播放图像子集
+        private void GetImage(int targetLabel)
+        {
+
+            List<Foo> tmpTarPic = new List<Foo>();//存放目标图片信息
+            List<Foo> tmpnTarPic = new List<Foo>();//存放非目标图片信息
+            int index = 0;
+            //遍历每一张图片，将图片分为目标图片和非目标图片，分别存在tmpTarPic和tmpnTarPic
+            foreach (Foo theFoo in Config.allPic)
+            {
+                if (theFoo.label == targetLabel)
+                    tmpTarPic.Add(theFoo);
+                else
+                    tmpnTarPic.Add(theFoo);
+            }
+
+            //罗列出目标图片
+            int[] tmpTarLabel = new int[Config.m_targetnum];
+            tmpTarLabel = myRan(tmpTarPic.Count, tmpTarPic.Count - 1, 0, Config.m_targetnum);
+            foreach (int eTarLabel in tmpTarLabel)
+            {
+                Config.feedback[index++] = tmpTarPic[eTarLabel];
+            }
+
+            //罗列出非目标图片，放入nTargetPic
+            int[] tmpnTarLabel = new int[Config.m_trialnum - Config.m_targetnum];
+            tmpnTarLabel = myRan(tmpnTarPic.Count, tmpnTarPic.Count - 1, 0, Config.m_trialnum - Config.m_targetnum);
+            foreach (int enTarLabel in tmpnTarLabel)
+            {
+                Config.feedback[index++] = tmpnTarPic[enTarLabel];
+            }
+
+        }
+
+        //产生随机数
+        private int[] myRan(int inNum, int upLimit, int lowLimit, int outNum)
+        {
+            int[] index = new int[inNum];
+            int[] result = new int[outNum];
+
+            for (int i = 0; i < inNum; i++)
+                index[i] = i;
+
+            Random ran = new Random();
+
+            int site = inNum;
+            int id;
+
+            for (int j = 0; j < outNum; j++)
+            {
+                id = ran.Next(0, site - 1);
+                result[j] = index[id];
+                index[id] = index[site - 1];
+                site--;
+            }
+
+            return result;
+        }
+
+        // 乱序
+        private void disorder(Foo[] arr, int size)
+        {
+            Random seed = new Random(System.Guid.NewGuid().GetHashCode() + 1 * 3456575);
+            Foo tmp = new Foo();
+            int rand = 0;
+            for (int i = 0; i < size; ++i)
+            {
+                rand = seed.Next(i, size - 1);
+                tmp = arr[i];
+                arr[i] = arr[rand];
+                arr[rand] = tmp;
+            }
+        }
+        //---------------------------------------------------------------------------
+
+        # endregion
 
         #region delegation
 
-        private void drawNumber(string num, Image bg_image, 
-            Graphics my_graphics, Brush my_brush, Font my_font)
+        // 在窗体某个位置（中央）显示字符串
+        private void drawCaption(string caption, SizeF amend, Color color, float fontsize)
         {
-            //num = "+"; //如果要显示十字，就加这句好了
-            //pictureBox1.Image = bg_image;
-            my_graphics.DrawString(num, my_font, my_brush, this.Size.Width/2 - my_font.Height/3, this.Size.Height/2 - my_font.Height/2);
-            if ("+" == num)
+            // amend.Width     --> amend of x axis of location
+            // amend.Height    --> amend of y axis of locationa
+            // 默认是字符串在窗体的中间，如果想要改变位置，则需要修正amend
+
+            Graphics my_graphics = this.CreateGraphics();
+            Brush my_brush = new SolidBrush(color);
+            Font my_font = new Font("黑体", fontsize, FontStyle.Bold);
+
+            pictureBox1.Visible = false;
+            //my_graphics.Clear(this.BackColor);   // 清楚之前屏幕上的所有绘图，这很危险
+            // 获取字符串的宽度和长度
+            SizeF sizef = my_graphics.MeasureString(caption, my_font);        
+            my_graphics.DrawString(caption, my_font, my_brush,
+                new RectangleF(this.Width / 2 - sizef.Width / 2 + amend.Width, this.Height / 2 - sizef.Height / 2 + amend.Height, sizef.Width, sizef.Height));
+            my_graphics.Dispose();
+            my_font.Dispose();
+            my_brush.Dispose();
+
+            if ("+" == caption)
             {
                 pictureBox1.Visible = true;
             }
         }
 
-        private void clnNum(Graphics my_graphics)
+        private void clnNum()
         {
+            Graphics my_graphics = this.CreateGraphics();
             my_graphics.Clear(Color.Gray);
+            my_graphics.Dispose();
         }        
 
         private void showPicture(int seq)
@@ -288,33 +404,23 @@ namespace RSVP7._0
         // run() for countdown
         private void countRun()
         {
-            //初始化
-            Image bg_image;
-            Graphics my_graphics;
-            Brush my_brush;
-            Font my_font;
-
-            bg_image = RSVP7._0.Properties.Resources.bg_gray;
-            my_graphics = this.CreateGraphics();
-            my_brush = new SolidBrush(Color.Black);
-            my_font = new Font("黑体", 150, FontStyle.Bold);
-
-            count ct = new count(drawNumber);
+            count ct = new count(drawCaption);
             clean cln = new clean(clnNum);
             string str;
             //实验开始倒数
             for (int i = 5; i >= 1; i--)
             {
                 str = i.ToString();
-                this.Invoke(ct, new object[] { str, bg_image, my_graphics, my_brush, my_font });
+                this.Invoke(ct, new object[] { str, new SizeF(0,0), Color.Black, 150 });
                 Thread.Sleep(1000);
-                this.Invoke(cln, new object[] { my_graphics });
+                this.Invoke(cln, new object[] { });
             }
 
             if (thr == null)
             {
                 if (Config.m_auditory != 0)
-                    this.Invoke(ct, new object[] { "+", bg_image, my_graphics, my_brush, my_font });
+                    this.Invoke(ct, new object[] { "+", new SizeF(0,0), Color.Black, 150 });                
+                this.Invoke(cln, new object[] { });
                 thr = new Thread(new ThreadStart(thrRun));
                 thr.Start();
             }
@@ -342,20 +448,20 @@ namespace RSVP7._0
 
             showPic sp = new showPic(showPicture);           
     
-            // 获取播放图像
-            Loadimages(run);
-
+            // 获取播放图像 ---- 本来觉得放在这里符合逻辑，容易理解，但是生成随机顺序并加载图像的速度有点慢，所以前移到倒数线程开始之后！！！
+            //Loadimages(run);
+         
             //要初始和恢复变量
-            loop = 1;
+            loop = 0;
             int trialnum = Config.m_trialnum;
 
             // 发送标志255表示开始
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(1);
-            //DlPortWritePortUshort(0x378, (ushort)(255));
-            //Thread.Sleep(10);
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(190);            
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(255));
+            Thread.Sleep(10);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(190);            
             
             while (true)
             {
@@ -363,15 +469,16 @@ namespace RSVP7._0
                 //获取图片和声音播放的数组下标  
 
                 //显示图片，播放声音
-                this.Invoke(sp, new object[] { loop });                       
+                this.Invoke(sp, new object[] { loop });
 
+                int label = Config.feedback[loop].label;
                 // TODO: 发送并口消息 
                 // 即将对应的标签发送给信号采集器。训练阶段标签有意义，测试阶段，标签可能没有意义
-                //DlPortWritePortUshort(0x378, (ushort)(0));
-                //Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
-                //DlPortWritePortUshort(0x378, (ushort)(Config.feedback[loop].label));
-                //Thread.Sleep(10);
-                //DlPortWritePortUshort(0x378, (ushort)(0));
+                DlPortWritePortUshort(0x378, (ushort)(0));
+                Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
+                DlPortWritePortUshort(0x378, (ushort)(Config.feedback[loop].label));
+                Thread.Sleep(10);
+                DlPortWritePortUshort(0x378, (ushort)(0));
 
                 // 图像显示一段时间，通过线程睡眠固定时间                
                 // 每张图像显示完之后还有一段固定时间间歇，用于显示背景或者说不显示任何无效的图像
@@ -390,12 +497,14 @@ namespace RSVP7._0
 
             // 发送标志253表示结束
             this.Invoke(sp, new object[] { 0 });
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            //Thread.Sleep(1);
-            //DlPortWritePortUshort(0x378, (ushort)(253));
-            //Thread.Sleep(100);
-            //DlPortWritePortUshort(0x378, (ushort)(0));
-            run++;
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(253));
+            Thread.Sleep(100);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+
+            // 本轮实验完整结束，轮数加一
+            run++;          
         }
         #endregion
 
@@ -406,9 +515,9 @@ namespace RSVP7._0
             DlPortWritePortUshort(0x378, (ushort)(0));
             Thread.Sleep(1);
             DlPortWritePortUshort(0x378, (ushort)(250));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
-            Thread.Sleep(10);
-            DlPortWritePortUshort(0x378, (ushort)(0));
-            MessageBox.Show("there is a object");
+            //Thread.Sleep(10);
+            //DlPortWritePortUshort(0x378, (ushort)(0));
+            //MessageBox.Show("there is a object");
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -455,54 +564,54 @@ namespace RSVP7._0
                 client.CommandHandler -= Client_A_Handler;
                 client.CommandHandler -= Client_B_Handler;
             }
-        }
-
-        private void drawCaption(string caption, Rectangle rect, Color color)
-        {
-            Graphics my_graphics = this.CreateGraphics();
-            Brush my_brush = new SolidBrush(color);
-            Font my_font = new Font("黑体", 80, FontStyle.Bold);
-
-            pictureBox1.Visible = false;
-            my_graphics.Clear(this.BackColor);
-            //Rectangle rect = new Rectangle(pictureBox1.Location.X + 150, this.Height / 2 - my_font.Height, pictureBox1.Width, my_font.Height);
-            my_graphics.DrawString(caption, my_font, my_brush, 
-                new Rectangle(rect.X-(my_font.Height * rect.Y/2), rect.Width-my_font.Height/2,rect.Y * my_font.Height, my_font.Height));
-            my_graphics.Dispose();
-            my_font.Dispose();
-            my_brush.Dispose();
-        }
+        }        
 
         // command handler functions
         private void Tcp_A_Handler(Object sender, CommandEventArgs e)
         {
             if ('A' == e.command)
-            {                
-                drawCaption("休 息", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0),Color.Green);
+            {
+                this.Controls.RemoveByKey("flowimages");
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
+                drawCaption("休 息", new SizeF(0,0), Color.DarkKhaki, 80);
             }
         }
 
         private void Tcp_B_Handler(Object sender, CommandEventArgs e)
         {
             if ('B' == e.command)
-            {                
-                drawCaption("训练 结束", new Rectangle(this.Size.Width/2, 5, this.Size.Height/2, 0), Color.Yellow);
+            {
+                this.Controls.RemoveByKey("flowimages");
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
+                drawCaption("训练 结束", new SizeF(0, 0), Color.Chartreuse, 80);
             }
         }
 
         private void Tcp_C_Handler(Object sender, CommandEventArgs e)
         {
             if ('C' == e.command)
-            {                
-                drawCaption("等待 结果", new Rectangle(this.Size.Width / 2, 5, this.Size.Height / 2, 0), Color.Violet);
+            {
+                this.Controls.RemoveByKey("flowimages");
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
+                drawCaption("等待 结果", new SizeF(0,0), Color.Coral, 80);
             }
         }
 
         private void Tcp_S_Handler(Object sender, CommandEventArgs e)
         {
             if ('S' == e.command)
-            {                
-                drawCaption("开 始", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0), Color.YellowGreen);
+            {
+                this.Controls.RemoveByKey("flowimages");
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
+                drawCaption("开 始", new SizeF(0,0), Color.Cyan, 80);
             }
         }
 
@@ -510,26 +619,68 @@ namespace RSVP7._0
         {
             if ('F' == e.command)
             {
-                // 显示结果图片
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
-                int h_margin = 0;
-                if (this.Size.Height > 100)
+
+                // handler似乎在触发它事件的线程里运行
+                // 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
+                // 而不是PicShow实例所处的线程中。
+                // 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
+                //
+                // 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+                try
                 {
-                    h_margin = (this.Size.Height - 1000) / 2;   // 5行， 每行高200
+                    flowImage flg = new flowImage(display);
+                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), 20 });
                 }
-                int index = 0;
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+
+
+                // title               
+                // 这时统计结果都是与前一轮有关，轮数已经加一了，故下面要减一！！
+                int objLabel = Config.m_evtlabel[run-1];
+
+                float accuracy = 0;
+                for (int i = 0; i < Config.m_trialnum; ++i)
+                {
+                    if ((Config.feedback[i].score > 0 && Config.feedback[i].label == objLabel) || (Config.feedback[i].score <= 0 && Config.feedback[i].label != objLabel))
+                        accuracy += 1;
+                }
+                accuracy = 100.0f * accuracy / (float)Config.m_trialnum;
+                Font my_font = new Font("黑体", 40, FontStyle.Bold);
+                SizeF sz = ghs.MeasureString("EEG搜索图像的结果 >>>    准确率：" + accuracy.ToString() + "%", my_font);
+                drawCaption("EEG搜索图像的结果 >>>    准确率：" + accuracy.ToString() + "%", new SizeF(-(this.Width / 2 - sz.Width / 2) + 10, -(this.Height / 2 - sz.Height / 2) + 50), Color.BurlyWood, 40);
+
+                // target 
+                my_font = new Font("黑体", 30, FontStyle.Bold);
+                sz = ghs.MeasureString("本轮目标", my_font);
+                drawCaption("本轮目标", new SizeF(-(this.Width / 2 - sz.Width / 2) + 70, -(this.Height / 2 - sz.Height / 2) + 250), Color.Blue, 40);
                 Image img;
-                for (int i = 0; i < 5; ++i)
+                DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
+                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();       
+                FileInfo[] tmpPic = tmpSubFile[objLabel - 1].GetFiles();               
+                for (int i = 0; i < 2; ++i)
                 {
-                    for (int j = 0; j < 4; ++j)
+                    if (".db" != tmpPic[i].Extension)
                     {
-                        img = Image.FromFile(Config.feedback[index++].imagepath);
-                        ghs.DrawImage(img, new Rectangle(this.Size.Width/2-(2-j)*200, h_margin + i*200, 200, 200));
+                        img = Image.FromFile(tmpPic[i].FullName);
+                        ghs.DrawImage(img, new Rectangle(20 + i * 170, 270 + Convert.ToInt32(sz.Height), 150, 150));
                     }
+
                 }
+                // roc
+                Pen anpen = new Pen(Color.Coral);
+                anpen.Width = 4;
+                Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
+                myplot.Plotaxis();
+                float auc = myplot.PlotRoc(Config.feedback, 20, objLabel);             
+                sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
+                drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);
+
                 ghs.Dispose();
-                
             }
         }
 
@@ -537,9 +688,14 @@ namespace RSVP7._0
         private void Client_A_Handler(Object sender, CommandEventArgs e)
         {
             if ('A' == e.command)
-            {
+            {               
+                this.Controls.RemoveByKey("flowimages");
+                Graphics tmp = this.CreateGraphics();
+                tmp.Clear(this.BackColor);
+                tmp.Dispose();
                 // 显示继续新的搜索
-                drawCaption("重新搜索", new Rectangle(this.Size.Width / 2, 3, this.Size.Height / 2, 0), Color.YellowGreen);
+                run -= 1;              // 需要重新搜索前一轮的目标，故轮数回拨！！！
+                drawCaption("重新 搜索", new Size(0, 0), Color.DarkSalmon, 80);
             }
         }
 
@@ -548,26 +704,46 @@ namespace RSVP7._0
         {
             if ('B' == e.command)
             {
-                // 显示结果图片
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
-                int h_margin = 0;
-                if (this.Size.Height > 100)
+                // 显示结果图片
+                try
                 {
-                    h_margin = (this.Size.Height - 1000) / 2;   // 5行， 每行高200
+                    flowImage flg = new flowImage(display);
+                    this.Invoke(flg, new object[] { new Point(0, 0), new Size(600, 400), e.number });
                 }
-                int index = 0;
-                Image img;
-                for (int i = 0; i < 5; ++i)
+                catch (Exception ex)
                 {
-                    for (int j = 0; j < 4; ++j)
-                    {
-                        img = Image.FromFile(Config.feedback[index++].imagepath);
-                        ghs.DrawImage(img, new Rectangle(this.Size.Width / 2 - (2 - j) * 200, h_margin + i * 200, 200, 200));
-                    }
+                    MessageBox.Show(ex.ToString());
                 }
+
+
                 ghs.Dispose();
             }
+        }
+
+        // 代理实现函数，展示EEG搜索结果图像
+        private void display(Point location, Size size, int count)
+        {                  
+            FlowLayoutPanel fllp = new FlowLayoutPanel();
+            this.Controls.Add(fllp);     // 将fllp加入到当前的窗体PicShow（psw)中
+            fllp.Name = "flowimages";    // 用于从窗体中删除该控件时的key (this.Controls.RemoveByKey("flowimages");)以达到清屏的目的
+
+            for (int i = 0; i < count; i++)
+            {
+                PictureBox tmp = new PictureBox();
+                tmp.Size = new Size(150, 150);
+                tmp.SizeMode = PictureBoxSizeMode.Zoom;
+                tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
+                //tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
+                fllp.Controls.Add(tmp);
+            }
+
+            fllp.Size = size;
+            fllp.Location = location;
+            fllp.AutoScroll = true;
+            fllp.FlowDirection = FlowDirection.LeftToRight;         
+            fllp.Visible = true;            
         }
         #endregion
     }

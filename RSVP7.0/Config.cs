@@ -24,15 +24,15 @@ namespace RSVP7._0
         /*
          * 声明参数变量
          */
-        public static int m_durationT;     // 每幅图片持续的时间
-        public static int m_trialnum;      // 每次run的图像数
-        public static int m_tmbreak;      // 每组图片显示之间的时间间隔
-        public static int m_targetnum;        // 语义组数,其实就是单个语义的图片个数
-        public static string[] m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
-        public static int m_auditory;      // 是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
-        public static int m_audi_groups;   // 单个语义的声音文件个数
+        public static int m_durationT;          // 每幅图片持续的时间
+        public static int m_trialnum;           // 每次run的图像数
+        public static int m_tmbreak;            // 每组图片显示之间的时间间隔
+        public static int m_targetnum;          // 语义组数,其实就是单个语义的图片个数
+        public static int[] m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
+        public static int m_auditory;           // 是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
+        public static String m_objInstanceLoc;  // 目标图像事例的文件路径   
                             
-        public static int picNum;          //一组中应包含的图片数，其实就是包含的不同的语义数
+        public static int picNum;               //一组中应包含的图片数，其实就是包含的不同的语义数
         TcpSocket myServer = null;
         TcpClient myClient = null;
         public static string ip;
@@ -64,7 +64,7 @@ namespace RSVP7._0
             textBox4.Text = "10";
             textBox5.Text = "1,2";
             textBox7.Text = "-1";
-            textBox8.Text = "0";
+            //textBox8.Text = "0";
             this.Text = "Display";     //窗体的Title
             Tbox_ip.Text  = "10.14.86.174";
             Tbox_port.Text= "10086";
@@ -119,7 +119,12 @@ namespace RSVP7._0
             {
                 String obj = textBox5.Text.ToString();
                 char[] delimit = { ',','，'};
-                m_evtlabel = obj.Split(delimit);
+                string[] tmp  = obj.Split(delimit);
+                m_evtlabel = new int[tmp.Count()];
+                for (int i = 0; i < tmp.Count(); ++i)
+                {
+                    m_evtlabel[i] = Int32.Parse(tmp[i]);
+                }
             }
             catch
             {
@@ -134,16 +139,7 @@ namespace RSVP7._0
             {
                 MessageBox.Show("Auditory 不能为空！");
                 return false;
-            }
-            try
-            {
-                m_audi_groups = int.Parse(textBox8.Text.ToString());    
-            }
-            catch
-            {
-                MessageBox.Show("Audi-Groups不能为空！");
-                return false;
-            }
+            }          
 
             return true;
         }
@@ -152,6 +148,7 @@ namespace RSVP7._0
 
         #region Action on Click
 
+        // 通过文件夹对话框获取图像路径，并加载所有图像的路径
         private void button1_Click(object sender, EventArgs e)
         {
             /*
@@ -171,6 +168,7 @@ namespace RSVP7._0
 
                 int sublabel = tmpSubFile.Count();//获取face文件夹下子文件夹个数，即总人数
                 //MessageBox.Show(Convert.ToString(sublabel));
+                // NOTE: windowsXP图片文件中以缩略图浏览后，系统自动在该文件中生成Thumbs.db（缓存Windows Explorer的缩略图的文件）
                 for (i = 0; i < tmpSubFile.Count(); i++)
                 {
                     FileInfo[] tmpPic = tmpSubFile[i].GetFiles();
@@ -179,7 +177,7 @@ namespace RSVP7._0
                     {
                         if (".db" != jpgFile.Extension)
                         {
-                            tmpFoo.label = Convert.ToInt32(tmpSubFile[i].Name);//获取人物文件夹编号                        
+                            tmpFoo.label = Convert.ToInt32(tmpSubFile[i].Name);//获取人物文件夹编号, 即每张图像的类标签                       
                             tmpFoo.imagepath = jpgFile.FullName;
                             allPic.Add(tmpFoo);//allPic list中添加一条图片信息
                         }
@@ -190,29 +188,9 @@ namespace RSVP7._0
 
                 IschooseFolder = true;
             }
-            //if (textBox6.Text!="")
-            //{
-            //    DirectoryInfo theFolder = new DirectoryInfo(myfDialog.Path);
-            //    picAmount = 0;
-            //    //遍历文件夹并将图片加入数组
-            //    foreach (FileInfo NextFile in theFolder.GetFiles())
-            //    {
-            //        //windowsXP图片文件中以缩略图浏览后，系统自动在该文件中生成Thumbs.db（缓存Windows Explorer的缩略图的文件）
-            //        if (NextFile.Name.ToString() == "Thumbs.db")
-            //            continue;
-            //        try
-            //        {
-            //            picMap[picAmount++] = Image.FromFile(NextFile.FullName.ToString());
-            //        }
-            //        catch
-            //        {
-            //            MessageBox.Show(picAmount.ToString()+" "+NextFile.FullName.ToString());
-            //        }
-            //    }
-                
-            //}
         }
 
+        // 打开播放图像的界面，再次之前要求设置好所有参数
         private void button2_Click(object sender, EventArgs e)
         {
             if (GetParam())
@@ -235,23 +213,25 @@ namespace RSVP7._0
             }                        
         }
 
-        private void Duration(object sender, EventArgs e)
+        // 添加训练时的目标图像事例的文件路径，用于在每轮开始之前显示该轮目标的事例
+        private void Btn_objinstance_Click(object sender, EventArgs e)
         {
-           /*
-            * 无用代码
-            */
+            FolderDialog myfolderDlg = new FolderDialog();
+            myfolderDlg.DisplayDialog();
+            
+            m_objInstanceLoc = myfolderDlg.Path;
+            textBox8.Text = m_objInstanceLoc;
         }
 
+        // 添加声音的位置（预留）
         private void button3_Click(object sender, EventArgs e)
         {
-            /*
-             * add location of audio files
-             */
+            // 事例目标图像位置
 
-            //FolderDialog myfolderDlg = new FolderDialog();
-            //myfolderDlg.DisplayDialog();
+            FolderDialog myfolderDlg = new FolderDialog();
+            myfolderDlg.DisplayDialog();
 
-            //textBox9.Text = myfolderDlg.Path;
+            textBox9.Text = myfolderDlg.Path;
             //if (textBox9.Text!="")
             //{
             //    DirectoryInfo myfolder = new DirectoryInfo(myfolderDlg.Path);
@@ -318,6 +298,8 @@ namespace RSVP7._0
                 psw.Close();
             }
         }
+
+       
 
     }
 }
