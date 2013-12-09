@@ -19,7 +19,7 @@ namespace RSVP7._0
         # region Var Initialization      
 
         //全局变量声明或初始化
-        
+        Image[] picMap = new Image[300];  //用于存储要显示的图片
         int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
         int run = 0;       
         System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
@@ -49,7 +49,7 @@ namespace RSVP7._0
             InitializeComponent();
            
             countDown = null;
-            thr = null;           
+            thr = null;
         }
 
         private void PicShow_Load(object sender, EventArgs e)
@@ -64,8 +64,8 @@ namespace RSVP7._0
             int ws_height = Screen.GetWorkingArea(this).Height;
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
-            //this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别           
-            this.ClientSize = new Size(800, 800);
+            this.ClientSize = new Size(ws_width, ws_height); //不知道this.Size与此有什么区别           
+            //this.ClientSize = new Size(800, 800);
             this.FormBorderStyle = FormBorderStyle.None;   //无边框模式
             this.BackColor = System.Drawing.Color.Gray;
 
@@ -74,7 +74,7 @@ namespace RSVP7._0
             pictureBox1.Location = new Point(ws_width / 2 - pictureBox1.Size.Width / 2, ws_height / 2 - pictureBox1.Size.Height / 2);
             pictureBox1.BackColor = System.Drawing.Color.Gray;
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom; //图片显示方式，伸缩适应        
-           //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来         
+           //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来 
 
         }
 
@@ -126,10 +126,9 @@ namespace RSVP7._0
                 closeThread();
                 // 开启新线程，同时加载播放图像
                 if ( null == thr && countDown == null)
-                {
+                {   
                     countDown = new Thread(new ThreadStart(countRun));
-                    countDown.Start();              
-                    Loadimages(run);
+                    countDown.Start();                                  
                 }                
             }
             else if (e.KeyCode == Keys.R)
@@ -267,7 +266,7 @@ namespace RSVP7._0
 
             for (int i = 0; i < Config.m_trialnum; ++i)
             {
-                Config.picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
+                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
             }
         }
 
@@ -362,8 +361,9 @@ namespace RSVP7._0
             Font my_font = new Font("黑体", fontsize, FontStyle.Bold);
 
             pictureBox1.Visible = false;
-            //my_graphics.Clear(this.BackColor);   // 清楚之前屏幕上的所有绘图，这很危险
-            // 获取字符串的宽度和长度
+           // pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
+           
+             //获取字符串的宽度和长度
             SizeF sizef = my_graphics.MeasureString(caption, my_font);        
             my_graphics.DrawString(caption, my_font, my_brush,
                 new RectangleF(this.Width / 2 - sizef.Width / 2 + amend.Width, this.Height / 2 - sizef.Height / 2 + amend.Height, sizef.Width, sizef.Height));
@@ -389,9 +389,13 @@ namespace RSVP7._0
             if (Config.m_auditory <= 0)
             {
                 if (seq != 0)                                  //传入参数时图片数组下标已经增1了，故代表图片标号从1开始
-                    pictureBox1.Image = Config.picMap[seq-1];    //PicShow窗体pictureBox控件显示图片                 
+                {
+                    pictureBox1.Image = picMap[seq - 1];    //PicShow窗体pictureBox控件显示图片                 
+                }
                 else
+                {
                     pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
+                }
             }
             if (Config.m_auditory >= 0)
                 musicplayer.Play();
@@ -420,7 +424,7 @@ namespace RSVP7._0
             {
                 if (Config.m_auditory != 0)
                     this.Invoke(ct, new object[] { "+", new SizeF(0,0), Color.Black, 150 });                
-                this.Invoke(cln, new object[] { });
+                //this.Invoke(cln, new object[] { });
                 thr = new Thread(new ThreadStart(thrRun));
                 thr.Start();
             }
@@ -449,7 +453,7 @@ namespace RSVP7._0
             showPic sp = new showPic(showPicture);           
     
             // 获取播放图像 ---- 本来觉得放在这里符合逻辑，容易理解，但是生成随机顺序并加载图像的速度有点慢，所以前移到倒数线程开始之后！！！
-            //Loadimages(run);
+            Loadimages(run);
          
             //要初始和恢复变量
             loop = 0;
@@ -469,23 +473,26 @@ namespace RSVP7._0
                 //获取图片和声音播放的数组下标  
 
                 //显示图片，播放声音
-                this.Invoke(sp, new object[] { loop });
-
+                //(委托出现问题了，没有找到原因，这里直接操做界面是可以的)
+                //this.Invoke(sp, new object[] { loop });          
+                pictureBox1.Image = picMap[loop];
+                
                 int label = Config.feedback[loop].label;
                 // TODO: 发送并口消息 
                 // 即将对应的标签发送给信号采集器。训练阶段标签有意义，测试阶段，标签可能没有意义
                 DlPortWritePortUshort(0x378, (ushort)(0));
                 Thread.Sleep(1);                                  // 该行直接删掉是不行的，否则后面写入并口的label无法显示，原因暂且不知                
-                DlPortWritePortUshort(0x378, (ushort)(Config.feedback[loop].label));
+                DlPortWritePortUshort(0x378, (ushort)(label));
                 Thread.Sleep(10);
                 DlPortWritePortUshort(0x378, (ushort)(0));
+
 
                 // 图像显示一段时间，通过线程睡眠固定时间                
                 // 每张图像显示完之后还有一段固定时间间歇，用于显示背景或者说不显示任何无效的图像
                 Thread.Sleep(Config.m_durationT-11);          // 图片显示的时间，发送并口消息时已经睡了11ms,这里减去
                 if (Config.m_tmbreak > 0)
                 {
-                    this.Invoke(sp, new object[] { 0 });
+                    pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray; // 不显示任何图片，显示背景
                     Thread.Sleep(Config.m_tmbreak);
                 }
 
@@ -496,7 +503,7 @@ namespace RSVP7._0
             }
 
             // 发送标志253表示结束
-            this.Invoke(sp, new object[] { 0 });
+            pictureBox1.Image = RSVP7._0.Properties.Resources.bg_gray;
             DlPortWritePortUshort(0x378, (ushort)(0));
             Thread.Sleep(1);
             DlPortWritePortUshort(0x378, (ushort)(253));
@@ -680,7 +687,7 @@ namespace RSVP7._0
                 anpen.Width = 4;
                 Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
                 myplot.Plotaxis();
-                float auc = myplot.PlotRoc(Config.feedback, 20, objLabel);
+                float auc = myplot.PlotRoc(Config.feedback, e.number, objLabel);
                 sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
                 drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);
 
@@ -741,8 +748,8 @@ namespace RSVP7._0
                 PictureBox tmp = new PictureBox();
                 tmp.Size = new Size(150, 150);
                 tmp.SizeMode = PictureBoxSizeMode.Zoom;
-                //tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
-                tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
+                tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
+                //tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
                 fllp.Controls.Add(tmp);
             }
 

@@ -125,6 +125,7 @@ namespace RSVP7._0
                             }
                             sw.Write("\r\n");
                             sw.Flush();
+                            // 按每个样本的得分降序排列
                             quick_sort(Config.feedback, 0, Config.m_trialnum - 1);
                             for (int i = 0; i < Config.m_trialnum; ++i)
                             {
@@ -140,7 +141,7 @@ namespace RSVP7._0
                             CommandEventArgs e = new CommandEventArgs();
                             // 通知界面显示结果
                             e.command = 'F';
-                            e.number = count;
+                            e.number = Config.m_trialnum;
                             CommandHandler(this, e);
 
                             // 通知客户端发送结果给机器处理

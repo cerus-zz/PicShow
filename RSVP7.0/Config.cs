@@ -38,8 +38,7 @@ namespace RSVP7._0
         public static string ip;
         public static int port;
         PicShow psw = null;
-
-        public static Image[] picMap = new Image[300];  //用于存储要显示的图片
+        
         public static string[] Soundname = new string[300];    //取决于语义的种类        
         public static Foo[] feedback = new Foo[300];
         public static List<Foo> allPic = new List<Foo>();

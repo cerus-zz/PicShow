@@ -128,6 +128,7 @@ namespace RSVP7._0
                         content += ";";
                     }
                     byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
+                    //byte[] sendBuffer = Encoding.BigEndianUnicode.GetBytes(content.ToCharArray());  // unicode
                     socket.Send(sendBuffer, sendBuffer.Length, 0);
                 }
                 catch { }
