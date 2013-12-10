@@ -31,7 +31,9 @@ namespace RSVP7._0
         public static int[] m_evtlabel;      // 目标语义特定图片的标签，用于对比实验，"0"表示不使用
         public static int m_auditory;           // 是否添加听觉刺激以及是否单独听觉刺激;为1(>0)时为单独听觉刺激，为0时，视觉+听觉刺激;为-1(<0)时无听觉刺激
         public static String m_objInstanceLoc;  // 目标图像事例的文件路径   
-                            
+        public static String m_ImagePath;       // 图像的路径
+        public static int m_run;                // 已运行的轮数
+
         public static int picNum;               //一组中应包含的图片数，其实就是包含的不同的语义数
         TcpSocket myServer = null;
         TcpClient myClient = null;
@@ -67,9 +69,9 @@ namespace RSVP7._0
             //textBox8.Text = "0";
             this.Text = "Display";     //窗体的Title
             Tbox_ip.Text  = "10.14.86.174";
-            Tbox_port.Text= "10086";
+            Tbox_port.Text= "4100";
             Tbox_ip_client.Text = "10.14.86.174";
-            Tbox_port_client.Text = "1050";
+            Tbox_port_client.Text = "1299";
         }
 
         #region Get Parameters
@@ -156,11 +158,12 @@ namespace RSVP7._0
              */
             FolderDialog myfDialog = new FolderDialog();
             myfDialog.DisplayDialog();
-
+          
             textBox6.Text = myfDialog.Path;
+            m_ImagePath = myfDialog.Path;
             if (textBox6.Text != "")
             {
-                int i = 0;
+                int i = 0;                
                 Foo tmpFoo = new Foo();
 
                 DirectoryInfo myFolder = new DirectoryInfo(myfDialog.Path);
@@ -178,7 +181,7 @@ namespace RSVP7._0
                         if (".db" != jpgFile.Extension)
                         {
                             tmpFoo.label = Convert.ToInt32(tmpSubFile[i].Name);//获取人物文件夹编号, 即每张图像的类标签                       
-                            tmpFoo.imagepath = jpgFile.FullName;
+                            tmpFoo.imagepath = jpgFile.FullName;                           
                             allPic.Add(tmpFoo);//allPic list中添加一条图片信息
                         }
 

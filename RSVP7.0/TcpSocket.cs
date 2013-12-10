@@ -147,7 +147,7 @@ namespace RSVP7._0
                             // 通知客户端发送结果给机器处理
                             e.command = 's';
                             e.number = 5;
-                            CommandHandler(this, e);                
+                            CommandHandler(this, e);                            
                         }
                         else if ('A' == command)
                         {

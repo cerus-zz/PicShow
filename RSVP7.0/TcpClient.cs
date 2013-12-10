@@ -58,7 +58,7 @@ namespace RSVP7._0
         {
             if (socket.Connected)
             {
-                SendData(this, new CommandEventArgs());
+                MessageBox.Show("** connected **");               
                 try
                 {
                     while (true)
@@ -67,40 +67,50 @@ namespace RSVP7._0
                         socket.Receive(receiveByte, receiveByte.Length, 0);
                         string Info = Encoding.ASCII.GetString(receiveByte);
                         string[] tmp = Info.Split(';');
-                        if ('A' == Info[0])
-                        {
+
+                        if ('a' == Info[0])
+                        {                           
                             // 结果的图像相似度差，重新获取结果图像                        
-                            if (tmp.Length - 1 != Config.m_trialnum)
+                            if (tmp.Length - 2 != Config.m_trialnum)
                                 MessageBox.Show("number of images come back from Server doesnot equal to Trial Number!");
                             else
                             {
-                                for (int i = 1; i < tmp.Length; ++i)
+                                for (int i = 1; i < tmp.Length-1; ++i)
                                 {
-                                    Config.feedback[i].imagepath = tmp[i];
+                                    string[] hirach = tmp[i].Split('\\');
+                                    Config.feedback[i-1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
                                 }
 
                                 CommandEventArgs e = new CommandEventArgs();
-                                e.command = 'A';
-                                CommandHandler(this, e);
+                                e.command = 'a';
+                                e.number = tmp.Length - 2;
+                                cmdHandler(this, e);
                             }
 
                         }
-                        else if ('B' == Info[0])
-                        {
-                            for (int i = 1; i < tmp.Length; ++i)
+                        else if ('b' == Info[0])
+                        {                            
+                            for (int i = 1; i < tmp.Length-1; ++i)
                             {
-                                Config.feedback[i].imagepath = tmp[i];
-                            }
+                                string[] hirach = tmp[i].Split('\\');
+                                Config.feedback[i-1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                            }                           
 
-                            CommandEventArgs e = new CommandEventArgs();
-                            e.command = 'B';
-                            e.number = tmp.Length - 1;
-                            CommandHandler(this, e);
+                            try
+                             {
+                                CommandEventArgs e = new CommandEventArgs();
+                                e.command = 'b';
+                                e.number = tmp.Length - 2;
+                                cmdHandler(this, e);                               
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(ex.ToString());
+                            }
                         }
                         else
                         {
-                            //do nothing
-                            MessageBox.Show("connected!");
+                            //do nothing                            
                         }
                     }
                 }
@@ -120,16 +130,23 @@ namespace RSVP7._0
             {
                 try
                 {
-                    //String content = "F:\\dgdgd\\dgdg\\s.txt";
-                    String content = null;
-                    for (int i = 0; i < e.number; ++i)
+                    if (0 != e.number)
                     {
-                        content += Config.feedback[i].imagepath;
-                        content += ";";
+                        String content = null;
+                        // 发送本轮的trial数，这样当发给服务器的图像相似度低需要需要重新搜索，则返回此数目的图像
+                        content += Config.m_trialnum.ToString() + ";";
+                        content += Config.m_evtlabel[Config.m_run-1].ToString() + ";";
+
+                        for (int i = 0; i < e.number; ++i)
+                        {
+                            content += Config.feedback[i].imagepath;
+                            content += ";";
+                        }
+
+                        byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
+                        //byte[] sendBuffer = Encoding.BigEndianUnicode.GetBytes(content.ToCharArray());  // unicode
+                        socket.Send(sendBuffer, sendBuffer.Length, 0);
                     }
-                    byte[] sendBuffer = Encoding.ASCII.GetBytes(content.ToCharArray());
-                    //byte[] sendBuffer = Encoding.BigEndianUnicode.GetBytes(content.ToCharArray());  // unicode
-                    socket.Send(sendBuffer, sendBuffer.Length, 0);
                 }
                 catch { }
             }
@@ -162,7 +179,7 @@ namespace RSVP7._0
             }
         }
 
-        public event TcpEventHandler CommandHandler; 
+        public event TcpEventHandler cmdHandler; 
         Thread thread = null;
         IPAddress HostIP;
         IPEndPoint point;

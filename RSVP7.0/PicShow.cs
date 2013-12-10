@@ -20,8 +20,7 @@ namespace RSVP7._0
 
         //全局变量声明或初始化
         Image[] picMap = new Image[300];  //用于存储要显示的图片
-        int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）
-        int run = 0;       
+        int loop = 0;  // seq为图片数组下标从0开始；loop为没组内循环计数(mod picNum)；round为组外循环计数（mod trialnum）             
         System.Media.SoundPlayer musicplayer = new System.Media.SoundPlayer();     
 
         Thread countDown;                 // 倒计时线程
@@ -50,6 +49,7 @@ namespace RSVP7._0
            
             countDown = null;
             thr = null;
+            Config.m_run = 0;     // 每次开始播放界面时，轮数总是从0开始
         }
 
         private void PicShow_Load(object sender, EventArgs e)
@@ -70,7 +70,7 @@ namespace RSVP7._0
             this.BackColor = System.Drawing.Color.Gray;
 
             //pictureBox1
-            pictureBox1.Size = new Size(200, 200);
+            pictureBox1.Size = new Size(400, 400);
             pictureBox1.Location = new Point(ws_width / 2 - pictureBox1.Size.Width / 2, ws_height / 2 - pictureBox1.Size.Height / 2);
             pictureBox1.BackColor = System.Drawing.Color.Gray;
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom; //图片显示方式，伸缩适应        
@@ -167,7 +167,7 @@ namespace RSVP7._0
                 
                 DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
                 DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
-                FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[run]-1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始
+                FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[Config.m_run]-1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始
 
                 // 显示caption和目标图像事例
                 drawCaption("本轮 目标", new SizeF(0, -200), Color.BurlyWood, 30);          
@@ -216,7 +216,7 @@ namespace RSVP7._0
                 //Image img;
                 //DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
                 //DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
-                //FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[run] - 1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始            
+                //FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[Config.m_run] - 1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始            
                 //for (int i = 0; i < 2; ++i)
                 //{
                 //    if (".db" != tmpPic[i].Extension)
@@ -433,7 +433,7 @@ namespace RSVP7._0
         // run() for showing our images
         private void thrRun()
         {
-            if (run >= Config.m_evtlabel.Length)
+            if (Config.m_run >= Config.m_evtlabel.Length)
             {
                 MessageBox.Show("no more RUN, Objects should be UPdated!");
                 return;
@@ -453,7 +453,7 @@ namespace RSVP7._0
             showPic sp = new showPic(showPicture);           
     
             // 获取播放图像 ---- 本来觉得放在这里符合逻辑，容易理解，但是生成随机顺序并加载图像的速度有点慢，所以前移到倒数线程开始之后！！！
-            Loadimages(run);
+            Loadimages(Config.m_run);
          
             //要初始和恢复变量
             loop = 0;
@@ -511,7 +511,7 @@ namespace RSVP7._0
             DlPortWritePortUshort(0x378, (ushort)(0));
 
             // 本轮实验完整结束，轮数加一
-            run++;          
+            Config.m_run++;                      
         }
         #endregion
 
@@ -550,8 +550,8 @@ namespace RSVP7._0
             }
             if (null != client)
             {
-                client.CommandHandler += Client_A_Handler;
-                client.CommandHandler += Client_B_Handler;
+                client.cmdHandler += Client_A_Handler;
+                client.cmdHandler += Client_B_Handler;
             }
         }
 
@@ -568,8 +568,8 @@ namespace RSVP7._0
             }
             if (null != client)
             {
-                client.CommandHandler -= Client_A_Handler;
-                client.CommandHandler -= Client_B_Handler;
+                client.cmdHandler -= Client_A_Handler;
+                client.cmdHandler -= Client_B_Handler;
             }
         }        
 
@@ -579,7 +579,7 @@ namespace RSVP7._0
             if ('A' == e.command)
             {
                 remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi, new object[] {});
+                this.Invoke(rfi, new object[] { });
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -592,7 +592,7 @@ namespace RSVP7._0
             if ('B' == e.command)
             {
                 remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi);
+                this.Invoke(rfi, new object[] { });
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -605,7 +605,7 @@ namespace RSVP7._0
             if ('C' == e.command)
             {
                 remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi);
+                this.Invoke(rfi, new object[] { });
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -618,7 +618,7 @@ namespace RSVP7._0
             if ('S' == e.command)
             {
                 remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi);
+                this.Invoke(rfi, new object[] { });
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
@@ -642,7 +642,7 @@ namespace RSVP7._0
                 try
                 {
                     flowImage flg = new flowImage(display);
-                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), 20 });
+                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 750), 20 });
                 }
                 catch (Exception ex)
                 {
@@ -652,7 +652,7 @@ namespace RSVP7._0
 
                 // title               
                 // 这时统计结果都是与前一轮有关，轮数已经加一了，故下面要减一！！
-                int objLabel = Config.m_evtlabel[run - 1];
+                int objLabel = Config.m_evtlabel[Config.m_run - 1];
 
                 float accuracy = 0;
                 for (int i = 0; i < Config.m_trialnum; ++i)
@@ -685,11 +685,11 @@ namespace RSVP7._0
                 // roc
                 Pen anpen = new Pen(Color.Coral);
                 anpen.Width = 4;
-                Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
+                Plot myplot = new Plot(ghs, new Point(this.Width - 310, 500), 300, anpen);
                 myplot.Plotaxis();
                 float auc = myplot.PlotRoc(Config.feedback, e.number, objLabel);
                 sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
-                drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);
+                drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 310, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);
 
                 ghs.Dispose();
             }
@@ -698,33 +698,43 @@ namespace RSVP7._0
         // 客户端接收到新的播放图像反馈，要求开始新的试验
         private void Client_A_Handler(Object sender, CommandEventArgs e)
         {
-            if ('A' == e.command)
-            {
-                remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi, new object[] {});
-                Graphics tmp = this.CreateGraphics();
-                tmp.Clear(this.BackColor);
-                tmp.Dispose();
-                // 显示继续新的搜索
-                run -= 1;              // 需要重新搜索前一轮的目标，故轮数回拨！！！
-                drawCaption("重新 搜索", new Size(0, 0), Color.DarkSalmon, 80);
+            if ('a' == e.command)
+            {         
+                try
+                {
+                    remove_flowImage rfi = new remove_flowImage(remove_display);
+                    this.Invoke(rfi, new object[] { });
+                    Graphics tmp = this.CreateGraphics();
+                    tmp.Clear(this.BackColor);
+                    tmp.Dispose();
+                    // 显示继续新的搜索
+                    Config.m_run -= 1;              // 需要重新搜索前一轮的目标，故轮数回拨！！！
+                    count ct = new count(drawCaption);
+                    this.Invoke(ct, new object[] {"重新 搜索", new SizeF(0, 0), Color.DarkSalmon, 80});                 
+                }
+                catch (Exception ee)
+                {
+                    MessageBox.Show(ee.ToString());
+                }
+                
             }
         }
 
         // 客户端接收到计算机从大图库搜索到的图像结果，进行显示
         private void Client_B_Handler(Object sender, CommandEventArgs e)
         {
-            if ('B' == e.command)
+            if ('b' == e.command)
             {
                 remove_flowImage rfi = new remove_flowImage(remove_display);
-                this.Invoke(rfi);
+                this.Invoke(rfi, new object[] {});
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
+                
                 // 显示结果图片
                 try
                 {
                     flowImage flg = new flowImage(display);
-                    this.Invoke(flg, new object[] { new Point(0, 0), new Size(600, 400), e.number });
+                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), e.number });
                 }
                 catch (Exception ex)
                 {
@@ -732,16 +742,16 @@ namespace RSVP7._0
                 }
 
 
-                ghs.Dispose();
+                ghs.Dispose();               
             }
         }
 
         // 代理实现函数，展示EEG搜索结果图像
         private void display(Point location, Size size, int count)
-        {                  
-            FlowLayoutPanel fllp = new FlowLayoutPanel();
+        {
+            FlowLayoutPanel fllp = new FlowLayoutPanel() { Name = "flowimages" };
             this.Controls.Add(fllp);     // 将fllp加入到当前的窗体PicShow（psw)中
-            fllp.Name = "flowimages";    // 用于从窗体中删除该控件时的key (this.Controls.RemoveByKey("flowimages");)以达到清屏的目的
+            //fllp.Name = "flowimages";    // 用于从窗体中删除该控件时的key (this.Controls.RemoveByKey("flowimages");)以达到清屏的目的
 
             for (int i = 0; i < count; i++)
             {
@@ -749,7 +759,7 @@ namespace RSVP7._0
                 tmp.Size = new Size(150, 150);
                 tmp.SizeMode = PictureBoxSizeMode.Zoom;
                 tmp.Image = Image.FromFile(Config.feedback[i].imagepath);
-                //tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");
+                //tmp.Image = Image.FromFile("G:\\Face\\01\\39.JPG");                
                 fllp.Controls.Add(tmp);
             }
 
@@ -763,7 +773,19 @@ namespace RSVP7._0
         // 代理实现函数，从PicShow的窗体中删除flowLayoutPanel的实例
         private void remove_display()
         {
-            this.Controls.RemoveByKey("flowimages");
+            try
+            {
+                int index = this.Controls.IndexOfKey("flowimages");              
+                if (-1 != index)
+                {
+                    this.Controls.RemoveByKey("flowimages");
+                }
+            }
+            catch
+            {
+                MessageBox.Show("wrong with delete flowlayoutpanel");
+            }
+           
             Graphics ghs = this.CreateGraphics();
             ghs.Clear(this.BackColor);
             ghs.Dispose();
