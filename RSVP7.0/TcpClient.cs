@@ -78,7 +78,10 @@ namespace RSVP7._0
                                 for (int i = 1; i < tmp.Length-1; ++i)
                                 {
                                     string[] hirach = tmp[i].Split('\\');
-                                    Config.feedback[i-1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                                    if (hirach.Count() >= 2)
+                                    {
+                                        Config.feedback[i - 1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                                    }
                                 }
 
                                 CommandEventArgs e = new CommandEventArgs();
@@ -93,7 +96,10 @@ namespace RSVP7._0
                             for (int i = 1; i < tmp.Length-1; ++i)
                             {
                                 string[] hirach = tmp[i].Split('\\');
-                                Config.feedback[i-1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                                if (hirach.Count() >= 2)
+                                {
+                                    Config.feedback[i - 1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                                }
                             }                           
 
                             try

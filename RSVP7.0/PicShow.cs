@@ -184,68 +184,26 @@ namespace RSVP7._0
             }
             else if (e.KeyCode == Keys.J)
             {
-                //Graphics ghs = this.CreateGraphics();
-                //ghs.Clear(this.BackColor);
-              
-                //// handler似乎在触发它事件的线程里运行
-                //// 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
-                //// 而不是PicShow实例所处的线程中。
-                //// 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
-                ////
-                //// 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
-                //try
-                //{
-                //    flowImage flg = new flowImage(display);
-                //    this.Invoke(flg, new object[] { new Point(this.Width/2 - 800/2, 150), new Size(800, 800), 20 });
-                //}
-                //catch (Exception ex)
-                //{
-                //    MessageBox.Show(ex.ToString());
-                //}
+                Graphics ghs = this.CreateGraphics();
+                ghs.Clear(this.BackColor);
 
+                // handler似乎在触发它事件的线程里运行
+                // 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
+                // 而不是PicShow实例所处的线程中。
+                // 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
+                //
+                // 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+                try
+                {
+                    flowImage flg = new flowImage(display);
+                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), 20 });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
 
-                //// title
-                //Font my_font = new Font("黑体", 40, FontStyle.Bold);
-                //SizeF sz = ghs.MeasureString("EEG搜索图像的结果 >>>    准确率：", my_font);
-                //drawCaption("EEG搜索图像的结果 >>>    准确率：", new SizeF(-(this.Width / 2 - sz.Width / 2) + 10, -(this.Height / 2 - sz.Height / 2) + 50), Color.BurlyWood, 40);
-
-                //// target 
-                //my_font = new Font("黑体", 30, FontStyle.Bold);
-                //sz = ghs.MeasureString("本轮目标", my_font);
-                //drawCaption("本轮目标", new SizeF(-(this.Width / 2 - sz.Width / 2) + 70, -(this.Height / 2 - sz.Height / 2) + 250), Color.Blue, 40);
-                //Image img;
-                //DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
-                //DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
-                //FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[Config.m_run] - 1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始            
-                //for (int i = 0; i < 2; ++i)
-                //{
-                //    if (".db" != tmpPic[i].Extension)
-                //    {
-                //        img = Image.FromFile(tmpPic[i].FullName);
-                //        ghs.DrawImage(img, new Rectangle(20 +i*170, 270 + Convert.ToInt32(sz.Height), 150, 150));
-                //    }
-
-                //}
-                //// roc
-                //Pen anpen = new Pen(Color.Coral);
-                //anpen.Width = 4;
-                //Plot myplot = new Plot(ghs, new Point(this.Width - 350, 500), 300, anpen);
-                //myplot.Plotaxis();
-                //float[] x = { 1, 1, -1, 1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, -1, 1, -1, 1, -1 };
-                //float[] y = { 0.9f, 0.8f, 0.7f, 0.6f, 0.55f, 0.54f, 0.53f, 0.52f, 0.51f, 0.505f, 0.4f, 0.39f, 0.38f, 0.37f, 0.36f, 0.35f, 0.34f, 0.33f, 0.30f, 0.1f };
-                //PointF[] org = new PointF[20];
-                //for (int i = 0; i < 20; ++i)
-                //{
-
-                //    org[i].X = x[i];
-                //    org[i].Y = y[i];
-                //}
-                //float auc = myplot.PlotRoc(org, 20, 1);
-             
-                //sz = ghs.MeasureString("AUC = " + auc.ToString(), my_font);
-                //drawCaption("AUC = " + auc.ToString(), new SizeF(new SizeF(-(this.Width / 2 - sz.Width / 2) + this.Width - 350, -(this.Height / 2 - sz.Height / 2) + 550)), Color.Coral, 30);              
-                
-                //ghs.Dispose();
+                ghs.Dispose();
             }
             else
                 MessageBox.Show("开始：Enter；重置：R；退出：Q");
@@ -408,10 +366,18 @@ namespace RSVP7._0
         // run() for countdown
         private void countRun()
         {
+            // 在开始新一轮前，先判断还有没有新的目标任务了
+            if (Config.m_run >= Config.m_evtlabel.Length)
+            {
+                MessageBox.Show("no more RUN, Objects should be UPdated!");
+                return;
+            }
+
+            //实验开始倒数
             count ct = new count(drawCaption);
             clean cln = new clean(clnNum);
             string str;
-            //实验开始倒数
+            
             for (int i = 5; i >= 1; i--)
             {
                 str = i.ToString();
@@ -432,12 +398,7 @@ namespace RSVP7._0
 
         // run() for showing our images
         private void thrRun()
-        {
-            if (Config.m_run >= Config.m_evtlabel.Length)
-            {
-                MessageBox.Show("no more RUN, Objects should be UPdated!");
-                return;
-            }
+        {            
             try
             {
                 // 终止旧倒计时线程，开启新线程
@@ -730,18 +691,47 @@ namespace RSVP7._0
                 Graphics ghs = this.CreateGraphics();
                 ghs.Clear(this.BackColor);
                 
-                // 显示结果图片
+                // 显示结果图片，图片要先显示，否则后面的文字无法正常显示
                 try
                 {
                     flowImage flg = new flowImage(display);
-                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), e.number });
+                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 600 / 2, 150), new Size(800, this.Height - 150 - 100), e.number });
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.ToString());
                 }
+                // 显示其他
+                int objLabel = 1;
+                if (Config.m_run >= 1)
+                {
+                    objLabel = Config.m_evtlabel[Config.m_run - 1];
+                }
+                count ct = new count(drawCaption);
 
+                // title
+                Font my_font = new Font("黑体", 40, FontStyle.Bold);
+                SizeF sz = ghs.MeasureString("机器搜索图像的结果 >>>", my_font);
+                this.Invoke(ct, new object[] { "机器搜索图像的结果 >>>", new SizeF(-(this.Width / 2 - sz.Width / 2) + 10, -(this.Height / 2 - sz.Height / 2) + 50), Color.BurlyWood, 40 });           
 
+                // target 
+                my_font = new Font("黑体", 30, FontStyle.Bold);
+                sz = ghs.MeasureString("本轮目标", my_font);
+                this.Invoke(ct, new object[] { "本轮目标", new SizeF(-(this.Width / 2 - sz.Width / 2) + 70, -(this.Height / 2 - sz.Height / 2) + 250), Color.Blue, 40  });               
+                Image img;
+                DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
+                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+                FileInfo[] tmpPic = tmpSubFile[objLabel - 1].GetFiles();
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (".db" != tmpPic[i].Extension)
+                    {
+                        img = Image.FromFile(tmpPic[i].FullName);
+                        ghs.DrawImage(img, new Rectangle(20 + i * 170, 270 + Convert.ToInt32(sz.Height), 150, 150));
+                    }
+
+                }
+                
                 ghs.Dispose();               
             }
         }

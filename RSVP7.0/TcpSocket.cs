@@ -139,10 +139,10 @@ namespace RSVP7._0
                             sFile.Close();
                                                         
                             CommandEventArgs e = new CommandEventArgs();
-                            // 通知界面显示结果
-                            e.command = 'F';
-                            e.number = Config.m_trialnum;
-                            CommandHandler(this, e);
+                            // 通知界面显示本轮RSVP的结果
+                            //e.command = 'F';
+                            //e.number = Config.m_trialnum;
+                            //CommandHandler(this, e);
 
                             // 通知客户端发送结果给机器处理
                             e.command = 's';

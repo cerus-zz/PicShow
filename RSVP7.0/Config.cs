@@ -122,10 +122,22 @@ namespace RSVP7._0
                 String obj = textBox5.Text.ToString();
                 char[] delimit = { ',','，'};
                 string[] tmp  = obj.Split(delimit);
-                m_evtlabel = new int[tmp.Count()];
+                int num = 0;
                 for (int i = 0; i < tmp.Count(); ++i)
                 {
-                    m_evtlabel[i] = Int32.Parse(tmp[i]);
+                    if ("" != tmp[i])
+                    {
+                        ++num;
+                    }
+                }
+                m_evtlabel = new int[num];
+                num = 0;
+                for (int i = 0; i < tmp.Count(); ++i)
+                {
+                    if ("" != tmp[i])
+                    {
+                        m_evtlabel[num++] = Int32.Parse(tmp[i]);
+                    }
                 }
             }
             catch
