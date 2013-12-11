@@ -83,8 +83,7 @@ namespace RSVP7._0
 
         private void receiveMethod(object obj)
         {
-            Socket soc = (Socket)obj;
-
+            Socket soc = (Socket)obj;     
             try
             {
                 while ((soc != null) && (soc.Connected))
@@ -99,7 +98,7 @@ namespace RSVP7._0
                         if ('F' == command)
                         {
                             // 返回了feedback结果，告诉PicShow显示结果
-                            //int size = (receiveCount-1) / 8;              
+                            // 结果每幅图像的得分是以播放顺序返回的，故feedback的label和imagepath每次都要按原顺序的图像信息更新！！！因为排序后这些都被打乱了           
                             int count = 0;
                             for (int i = 0; i < receiveCount; i += 8)
                             {
@@ -109,7 +108,9 @@ namespace RSVP7._0
                                     buf[j] = buffer[1+ i + j];
                                 }
                                 buf = buf.Reverse().ToArray();
-                                Config.feedback[count++].score = System.BitConverter.ToDouble(buf, 0);
+                                Config.feedback[count] = Config.originImage[count];
+                                Config.feedback[count].score = System.BitConverter.ToDouble(buf, 0);     
+                                
                             }
                             
                             FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
@@ -128,7 +129,7 @@ namespace RSVP7._0
                             // 按每个样本的得分降序排列
                             quick_sort(Config.feedback, 0, Config.m_trialnum - 1);
                             for (int i = 0; i < Config.m_trialnum; ++i)
-                            {
+                            {                                
                                 sw.Write(Config.feedback[i].label);
                                 sw.Write("-");
                                 sw.Write(Config.feedback[i].score);
@@ -140,9 +141,9 @@ namespace RSVP7._0
                                                         
                             CommandEventArgs e = new CommandEventArgs();
                             // 通知界面显示本轮RSVP的结果
-                            //e.command = 'F';
-                            //e.number = Config.m_trialnum;
-                            //CommandHandler(this, e);
+                            e.command = 'F';
+                            e.number = Config.m_trialnum;
+                            CommandHandler(this, e);
 
                             // 通知客户端发送结果给机器处理
                             e.command = 's';

@@ -41,8 +41,9 @@ namespace RSVP7._0
         public static int port;
         PicShow psw = null;
         
-        public static string[] Soundname = new string[300];    //取决于语义的种类        
-        public static Foo[] feedback = new Foo[300];
+        public static string[] Soundname = new string[300];    // 取决于语义的种类         
+        public static Foo[] feedback = new Foo[300];           // 主要用于按score对图像进行排序，结果用于显示或者反馈给服务器端
+        public static Foo[] originImage = new Foo[300];        // 保存每轮实验中顺序出现的图像的相关信息，包括：路径，标签。           
         public static List<Foo> allPic = new List<Foo>();
 
        // public static bool Isonshow = false;       // 显示图片的界面是否存在，用于socket线程反应前作判断
@@ -168,6 +169,10 @@ namespace RSVP7._0
             /*
              * 添加图片
              */
+            if (allPic.Count() != 0)
+            {
+                allPic.Clear();       // 保证每次
+            }
             FolderDialog myfDialog = new FolderDialog();
             myfDialog.DisplayDialog();
           

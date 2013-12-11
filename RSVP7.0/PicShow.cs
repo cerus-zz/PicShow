@@ -159,28 +159,31 @@ namespace RSVP7._0
             }
             else if (e.KeyCode == Keys.Space)
             {
-                this.Controls.RemoveByKey("flowimages");
-                pictureBox1.Visible = false;
-                Graphics ghs = this.CreateGraphics();
-                ghs.Clear(this.BackColor);
-                Image img;
-                
-                DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
-                DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
-                FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[Config.m_run]-1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始
-
-                // 显示caption和目标图像事例
-                drawCaption("本轮 目标", new SizeF(0, -200), Color.BurlyWood, 30);          
-                for (int i = 0; i < 2; ++i)
+                if (Config.m_run < Config.m_evtlabel.Length)
                 {
-                    if (".db" != tmpPic[i].Extension)
-                    {
-                        img = Image.FromFile(tmpPic[i].FullName);
-                        ghs.DrawImage(img, new Rectangle(this.Size.Width/2 - (1-i)*200 - 10+i*20, this.Size.Height/2 - 200/2, 200, 200));
-                    }
+                    this.Controls.RemoveByKey("flowimages");
+                    pictureBox1.Visible = false;
+                    Graphics ghs = this.CreateGraphics();
+                    ghs.Clear(this.BackColor);
+                    Image img;
 
+                    DirectoryInfo myFolder = new DirectoryInfo(Config.m_objInstanceLoc);
+                    DirectoryInfo[] tmpSubFile = myFolder.GetDirectories();
+                    FileInfo[] tmpPic = tmpSubFile[Config.m_evtlabel[Config.m_run] - 1].GetFiles();   // 目标标签从1开始！寻找第多少子文件夹，索引从0开始
+
+                    // 显示caption和目标图像事例
+                    drawCaption("本轮 目标", new SizeF(0, -200), Color.BurlyWood, 30);
+                    for (int i = 0; i < 2; ++i)
+                    {
+                        if (".db" != tmpPic[i].Extension)
+                        {
+                            img = Image.FromFile(tmpPic[i].FullName);
+                            ghs.DrawImage(img, new Rectangle(this.Size.Width / 2 - (1 - i) * 200 - 10 + i * 20, this.Size.Height / 2 - 200 / 2, 200, 200));
+                        }
+
+                    }
+                    ghs.Dispose();
                 }
-                ghs.Dispose();
             }
             else if (e.KeyCode == Keys.J)
             {
@@ -220,11 +223,11 @@ namespace RSVP7._0
             GetImage(Config.m_evtlabel[runnum]);
 
             // 利用对随机数排序乱序播放次序
-            disorder(Config.feedback, Config.m_trialnum);
+            disorder(Config.originImage, Config.m_trialnum);
 
             for (int i = 0; i < Config.m_trialnum; ++i)
             {
-                picMap[i] = Image.FromFile(Config.feedback[i].imagepath);
+                picMap[i] = Image.FromFile(Config.originImage[i].imagepath);
             }
         }
 
@@ -249,7 +252,7 @@ namespace RSVP7._0
             tmpTarLabel = myRan(tmpTarPic.Count, tmpTarPic.Count - 1, 0, Config.m_targetnum);
             foreach (int eTarLabel in tmpTarLabel)
             {
-                Config.feedback[index++] = tmpTarPic[eTarLabel];
+                Config.originImage[index++] = tmpTarPic[eTarLabel];
             }
 
             //罗列出非目标图片，放入nTargetPic
@@ -257,7 +260,7 @@ namespace RSVP7._0
             tmpnTarLabel = myRan(tmpnTarPic.Count, tmpnTarPic.Count - 1, 0, Config.m_trialnum - Config.m_targetnum);
             foreach (int enTarLabel in tmpnTarLabel)
             {
-                Config.feedback[index++] = tmpnTarPic[enTarLabel];
+                Config.originImage[index++] = tmpnTarPic[enTarLabel];
             }
 
         }
@@ -438,7 +441,7 @@ namespace RSVP7._0
                 //this.Invoke(sp, new object[] { loop });          
                 pictureBox1.Image = picMap[loop];
                 
-                int label = Config.feedback[loop].label;
+                int label = Config.originImage[loop].label;
                 // TODO: 发送并口消息 
                 // 即将对应的标签发送给信号采集器。训练阶段标签有意义，测试阶段，标签可能没有意义
                 DlPortWritePortUshort(0x378, (ushort)(0));
@@ -600,6 +603,7 @@ namespace RSVP7._0
                  //故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
                 
                  //因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+              
                 try
                 {
                     flowImage flg = new flowImage(display);
@@ -609,8 +613,6 @@ namespace RSVP7._0
                 {
                     MessageBox.Show(ex.ToString());
                 }
-
-
                 // title               
                 // 这时统计结果都是与前一轮有关，轮数已经加一了，故下面要减一！！
                 int objLabel = Config.m_evtlabel[Config.m_run - 1];

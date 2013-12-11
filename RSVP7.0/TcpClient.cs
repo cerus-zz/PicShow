@@ -70,7 +70,7 @@ namespace RSVP7._0
 
                         if ('a' == Info[0])
                         {                           
-                            // 结果的图像相似度差，重新获取结果图像                        
+                            // 结果的图像相似度差，重新获取结果图像，用于播放，故用Config.originImage数组                 
                             if (tmp.Length - 2 != Config.m_trialnum)
                                 MessageBox.Show("number of images come back from Server doesnot equal to Trial Number!");
                             else
@@ -80,7 +80,9 @@ namespace RSVP7._0
                                     string[] hirach = tmp[i].Split('\\');
                                     if (hirach.Count() >= 2)
                                     {
-                                        Config.feedback[i - 1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
+                                        // 获取机器返回重新搜索的图集的路径，并依据文件编号获取相应的目标号
+                                        Config.originImage[i - 1].label = Int32.Parse(hirach[hirach.Count()-2]);
+                                        Config.originImage[i - 1].imagepath = Config.m_ImagePath + "\\" + hirach[hirach.Count() - 2] + "\\" + hirach[hirach.Count() - 1];
                                     }
                                 }
 
@@ -92,7 +94,8 @@ namespace RSVP7._0
 
                         }
                         else if ('b' == Info[0])
-                        {                            
+                        {                      
+                            // 机器返回的结果，用于展示，故用Config.feedback数组
                             for (int i = 1; i < tmp.Length-1; ++i)
                             {
                                 string[] hirach = tmp[i].Split('\\');
