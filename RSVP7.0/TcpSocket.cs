@@ -31,18 +31,30 @@ namespace RSVP7._0
         }
         public void hostAcceptMethod()
         {
-
+            // 每次只接受一个客户端连接请求，如果来了新的，那么旧的就断掉
+            // 这满足了实际的需要。如果要同时维持多个客户端连接，则需要用数组保存
+            // 已经建立的连接，这样便于销毁
+            Socket newhandler = null; 
             while (true)
             {
                 try
                 {
-                    destSocket = socket.Accept();
-                    IPEndPoint clientip = (IPEndPoint)destSocket.RemoteEndPoint;
+                    newhandler = listener.Accept();
+                    if (null != destSocket)
+                    {
+                        // 先关闭旧连接
+                        destSocket.Shutdown(SocketShutdown.Both);
+                        destSocket.Close();
+                        trReceive.Abort();                        
+                    }
+                    // 开启新处理线程
+                    //IPEndPoint clientip = (IPEndPoint)destSocket.RemoteEndPoint;
                     //string msg = "客户端已连接！" + clientip.ToString();
-                    //this.Invoke(new ShowStatusHandle(this.ShowStatus), msg);
+                    //this.Invoke(new ShowStatusHandle(this.ShowStatus), msg); 
+                    destSocket = newhandler;
                     trReceive = new Thread(new ParameterizedThreadStart(receiveMethod));
                     trReceive.Start(destSocket);
-                    //break;
+                    MessageBox.Show("a new client ");
                 }
                 catch
                 {
@@ -55,12 +67,11 @@ namespace RSVP7._0
         {
             try
             {                                       
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.Bind(hostEP);
-                socket.Listen(100);
+                listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(hostEP);
+                listener.Listen(100);
                 trServerAccept = new Thread(hostAcceptMethod);
                 trServerAccept.Start();
-
             }
             catch (SocketException ex)
             {
@@ -75,7 +86,7 @@ namespace RSVP7._0
 
         public void endHost()
         {
-            if (socket != null) socket.Close();
+            if (listener != null) { listener.Close(); }
             if (destSocket != null) destSocket.Close();
             if (trServerAccept != null) { trServerAccept.Abort(); trServerAccept.Join(); }
             if (trReceive != null) { trReceive.Abort(); trReceive.Join(); }
@@ -109,8 +120,8 @@ namespace RSVP7._0
                                 }
                                 buf = buf.Reverse().ToArray();
                                 Config.feedback[count] = Config.originImage[count];
-                                Config.feedback[count].score = System.BitConverter.ToDouble(buf, 0);     
-                                
+                                Config.feedback[count].score = System.BitConverter.ToDouble(buf, 0);
+                                count++;
                             }
                             
                             FileStream sFile = new FileStream("D:\\result.txt", FileMode.Create | FileMode.Append);
@@ -190,13 +201,16 @@ namespace RSVP7._0
                             MessageBox.Show("Unknown Command!");
                         }
                     }// end if (receiveCount > 0)               
-                    
-                }
+                    else
+                    {
+                        // 接受到的数据长度为0， 连接被断开了
+                        //MessageBox.Show("a connection is closed");
+                    }   
+                }                
             }
             catch
             {
-                //reset(); after client cut the connect
-                //MessageBox.Show("客户端已断开！");
+                // 客户端断开连接                   
             }
         }
 
@@ -241,8 +255,8 @@ namespace RSVP7._0
             }
         }
 
-        public event TcpEventHandler CommandHandler; 
-        Socket socket = null;
+        public event TcpEventHandler CommandHandler;
+        Socket listener = null;
         Socket destSocket = null;
         Thread trServerAccept = null;
         Thread trReceive = null;

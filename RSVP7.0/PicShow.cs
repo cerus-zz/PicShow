@@ -50,6 +50,7 @@ namespace RSVP7._0
             countDown = null;
             thr = null;
             Config.m_run = 0;     // 每次开始播放界面时，轮数总是从0开始
+            drawCaption("准备 开始", new SizeF(0, 0), Color.Cyan, 80);
         }
 
         private void PicShow_Load(object sender, EventArgs e)
@@ -75,7 +76,8 @@ namespace RSVP7._0
             pictureBox1.BackColor = System.Drawing.Color.Gray;
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom; //图片显示方式，伸缩适应        
            //pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle; // pitureBox的边框显示出来 
-
+            pictureBox1.Visible = false;
+            drawCaption("准备 开始", new SizeF(0, 0), Color.Cyan, 80);
         }
 
         
@@ -88,7 +90,7 @@ namespace RSVP7._0
                 if (null != countDown)
                 {
                     countDown.Abort();
-                    countDown.Join();
+                    countDown.Join();                    
                     countDown = null;   //stopped状态下地线程不能使用.Start()方法重启故置空，等待开启新线程   
                 }
             }
@@ -120,6 +122,7 @@ namespace RSVP7._0
                 ghs.Clear(this.BackColor);
                 ghs.Dispose();
                 pictureBox1.Visible = false;
+                drawCaption("+", new SizeF(0, 0), Color.Black, 150);            
                 /*
                  * 开启新线程前，关闭旧线程
                  */
@@ -128,7 +131,8 @@ namespace RSVP7._0
                 if ( null == thr && countDown == null)
                 {   
                     countDown = new Thread(new ThreadStart(countRun));
-                    countDown.Start();                                  
+                    countDown.Start();
+                    Loadimages(Config.m_run);
                 }                
             }
             else if (e.KeyCode == Keys.R)
@@ -138,22 +142,29 @@ namespace RSVP7._0
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
-                drawCaption("开 始", new SizeF(0,0), Color.Cyan, 80);
+                drawCaption("休 息", new SizeF(0, 0), Color.DarkKhaki, 80);
                 /*
                  * 终止显示图片线程并重置                 
                  */
                 closeThread();
                 pictureBox1.Image = null;
 
-                // 如果是以外中断，那么该标签将会有用
+                // 如果是意外中断，那么该标签将会有用
                 DlPortWritePortUshort(0x378, (ushort)(0));
                 Thread.Sleep(1);
-                DlPortWritePortUshort(0x378, (ushort)(252));    //程序运行的PC上，LPT1并口资源为0378~037F和0778~077F
+                DlPortWritePortUshort(0x378, (ushort)(252));
                 Thread.Sleep(10);
                 DlPortWritePortUshort(0x378, (ushort)(0));
             }
             else if (e.KeyCode == Keys.Q)
             {
+                // 暴力关闭picshow之前，是要发送通知信号处理程序，一轮实验已中断
+                DlPortWritePortUshort(0x378, (ushort)(0));
+                Thread.Sleep(1);
+                DlPortWritePortUshort(0x378, (ushort)(252));
+                Thread.Sleep(10);
+                DlPortWritePortUshort(0x378, (ushort)(0));
+
                 closeThread();
                 CloseHandler(this, new EventArgs());
             }
@@ -184,29 +195,35 @@ namespace RSVP7._0
                     }
                     ghs.Dispose();
                 }
+                else
+                {
+                    // 在开始新一轮前，先判断还有没有新的目标任务了
+                    MessageBox.Show("no more RUN, Objects should be UPdated!");
+                }
             }
             else if (e.KeyCode == Keys.J)
             {
-                Graphics ghs = this.CreateGraphics();
-                ghs.Clear(this.BackColor);
+                // 仅仅是为了方便测试显示结果图像是否正确！可删！！！！
+                //Graphics ghs = this.CreateGraphics();
+                //ghs.Clear(this.BackColor);
 
-                // handler似乎在触发它事件的线程里运行
-                // 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
-                // 而不是PicShow实例所处的线程中。
-                // 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
-                //
-                // 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
-                try
-                {
-                    flowImage flg = new flowImage(display);
-                    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), 20 });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                }
+                //// handler似乎在触发它事件的线程里运行
+                //// 如一个TcpSocket实例中触发事件，该handler运行，那么此时handler运行在TcpSocket的线程中！！！
+                //// 而不是PicShow实例所处的线程中。
+                //// 故当我创建一个临时控件，并试图添加到PicShow的实例中时，发生错误，因为临时控件在TcpSocket实例的线程中创建的。
+                ////
+                //// 因此，这个地方我使用了代理来完成在PicShow中用flowLayoutPanel显示结果图像的功能。
+                //try
+                //{
+                //    flowImage flg = new flowImage(display);
+                //    this.Invoke(flg, new object[] { new Point(this.Width / 2 - 800 / 2, 150), new Size(800, 800), 20 });
+                //}
+                //catch (Exception ex)
+                //{
+                //    MessageBox.Show(ex.ToString());
+                //}
 
-                ghs.Dispose();
+                //ghs.Dispose();
             }
             else
                 MessageBox.Show("开始：Enter；重置：R；退出：Q");
@@ -332,7 +349,7 @@ namespace RSVP7._0
             my_font.Dispose();
             my_brush.Dispose();
 
-            if ("+" == caption)
+            if ("" == caption)
             {
                 pictureBox1.Visible = true;
             }
@@ -380,7 +397,8 @@ namespace RSVP7._0
             count ct = new count(drawCaption);
             clean cln = new clean(clnNum);
             string str;
-            
+
+            this.Invoke(cln, new object[] { });
             for (int i = 5; i >= 1; i--)
             {
                 str = i.ToString();
@@ -391,9 +409,7 @@ namespace RSVP7._0
 
             if (thr == null)
             {
-                if (Config.m_auditory != 0)
-                    this.Invoke(ct, new object[] { "+", new SizeF(0,0), Color.Black, 150 });                
-                //this.Invoke(cln, new object[] { });
+                this.Invoke(ct, new object[] { "", new SizeF(0, 0), Color.Black, 150 });
                 thr = new Thread(new ThreadStart(thrRun));
                 thr.Start();
             }
@@ -417,12 +433,19 @@ namespace RSVP7._0
             showPic sp = new showPic(showPicture);           
     
             // 获取播放图像 ---- 本来觉得放在这里符合逻辑，容易理解，但是生成随机顺序并加载图像的速度有点慢，所以前移到倒数线程开始之后！！！
-            Loadimages(Config.m_run);
+            //Loadimages(Config.m_run);
          
             //要初始和恢复变量
             loop = 0;
             int trialnum = Config.m_trialnum;
 
+            //实验开始前先发送本轮目标           
+            DlPortWritePortUshort(0x378, (ushort)(0));
+            Thread.Sleep(1);
+            DlPortWritePortUshort(0x378, (ushort)(Config.m_evtlabel[Config.m_run]));    // 发送本轮目标 
+            Thread.Sleep(10);
+            DlPortWritePortUshort(0x378, (ushort)(0));
+             
             // 发送标志255表示开始
             DlPortWritePortUshort(0x378, (ushort)(0));
             Thread.Sleep(1);
@@ -560,7 +583,7 @@ namespace RSVP7._0
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
                 tmp.Dispose();
-                drawCaption("训练 结束", new SizeF(0, 0), Color.Chartreuse, 80);
+                drawCaption("正在 训练", new SizeF(0, 0), Color.Chartreuse, 80);
             }
         }
 
@@ -585,8 +608,8 @@ namespace RSVP7._0
                 this.Invoke(rfi, new object[] { });
                 Graphics tmp = this.CreateGraphics();
                 tmp.Clear(this.BackColor);
-                tmp.Dispose();
-                drawCaption("开 始", new SizeF(0,0), Color.Cyan, 80);
+                tmp.Dispose();                
+                drawCaption("休 息", new SizeF(0, 0), Color.DarkKhaki, 80);
             }
         }
 
